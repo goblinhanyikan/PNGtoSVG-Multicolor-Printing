@@ -584,7 +584,7 @@
       layerDlSvg: 'SVG',
       layerDlStl: 'STL',
       downloadAllStl: 'Download all as STL (.zip)(EXPERIMENTAL, Success rate may vary)',
-      downloadAll3mf: 'Download all as 3MF (colored)(EXPERIMENTAL, Success rate better than .zip. Color retention doesnt work at the moment)',
+      downloadAll3mf: 'Download all as 3MF (colored)(Success rate may vary)',
       buildingZip: 'building zip…',
       building3mf: 'building 3mf…',
       runBtn: 'Vectorize',
@@ -649,8 +649,8 @@
       layerDl: 'İndir',
       layerDlSvg: 'SVG',
       layerDlStl: 'STL',
-      downloadAllStl: 'Tümünü STL olarak indir (.zip) (DENEYSEL, başarı oranı düşük)',
-      downloadAll3mf: 'Tümünü 3MF olarak indir (renkli)(DENEYSEL, başarı oranı orta, renkleri şu an için aktaramıyor)',
+      downloadAllStl: 'Tümünü STL olarak indir (.zip) (DENEYSEL)',
+      downloadAll3mf: 'Tümünü 3MF olarak indir (renkli)(DENEYSEL)',
       buildingZip: 'zip oluşturuluyor…',
       building3mf: '3mf oluşturuluyor…',
       runBtn: 'Vektörleştir',
@@ -1529,6 +1529,62 @@
   // STL files one at a time, where a slicer's auto-center/auto-arrange
   // behavior breaks alignment and causes z-fighting/gaps between colors.
   // ---------------------------------------------------------------
+  // ---------------------------------------------------------------
+  // Bambu Studio / OrcaSlicer-derived slicers (which Anycubic's slicer
+  // is one of) don't drive per-part filament color from the standard
+  // 3MF <basematerials>/pid+pindex mechanism above -- that's kept for
+  // spec-compliant readers, but these slicers primarily read their own
+  // proprietary metadata files inside the package:
+  //   - Metadata/project_settings.config: the project's filament
+  //     palette (a flat JSON array of hex colors, one per filament slot)
+  //   - Metadata/model_settings.config: which object/part uses which
+  //     filament slot (1-indexed "extruder" number)
+  // Neither is part of the official 3MF spec or documented by Bambu, so
+  // this is built from the observed structure of real project files
+  // rather than a spec. If a slicer ignores or misparses it, the field
+  // names below (especially the "extruder"/"filament_colour" keys) are
+  // the first place to adjust.
+  // ---------------------------------------------------------------
+  function buildProjectSettingsConfig(layers){
+    const obj = {
+      filament_colour: layers.map(l => l.hex.toUpperCase()),
+      filament_type: layers.map(() => 'PLA'),
+      filament_settings_id: layers.map((l, i) => 'Color ' + (i+1))
+    };
+    return JSON.stringify(obj, null, 4);
+  }
+
+  function buildModelSettingsConfig(parentObjId, partObjIds, layers){
+    const identity4x4 = '1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1';
+    const partTags = partObjIds.map((partId, i) =>
+      '<part id="' + partId + '" subtype="normal_part">' +
+      '<metadata key="name" value="Color ' + (i+1) + ' ' + layers[i].hex.toUpperCase() + '"/>' +
+      '<metadata key="matrix" value="' + identity4x4 + '"/>' +
+      '<metadata key="source_file" value=""/>' +
+      '<metadata key="extruder" value="' + (i+1) + '"/>' +
+      '</part>'
+    ).join('');
+
+    return '<?xml version="1.0" encoding="UTF-8"?>' +
+      '<config>' +
+      '<object id="' + parentObjId + '">' +
+      '<metadata key="name" value="Vectorized Multicolor Object"/>' +
+      '<metadata key="extruder" value="1"/>' +
+      partTags +
+      '</object>' +
+      '<plate>' +
+      '<metadata key="plater_id" value="1"/>' +
+      '<metadata key="plater_name" value=""/>' +
+      '<metadata key="locked" value="false"/>' +
+      '<model_instance>' +
+      '<metadata key="object_id" value="' + parentObjId + '"/>' +
+      '<metadata key="instance_id" value="0"/>' +
+      '<metadata key="identify_id" value="1"/>' +
+      '</model_instance>' +
+      '</plate>' +
+      '</config>';
+  }
+
   function triangles3MFMeshXML(triangles){
     const vBuf = [];
     const tBuf = [];
@@ -1560,35 +1616,47 @@
   // builds a ready-to-download 3MF package (as a Blob) bundling every
   // color layer as one colored *part* of a single multi-color object.
   //
-  // Each color becomes its own <object> (with pid/pindex pointing at its
-  // colorgroup entry), but none of those part-objects go into <build>
-  // directly. Instead they're nested under one parent object via
-  // <components>, and only the parent is placed with a single <item>.
-  // That's the shape a slicer needs to see to treat this as ONE
-  // multi-color object made of parts -- rather than several unrelated
-  // objects that happen to share a plate, which is what a flat list of
-  // top-level objects/items describes instead, and which is also why
-  // color wasn't sticking: color inheritance through the component tree
-  // only kicks in once the parts are actually wired together as
-  // components of a parent, not siblings in the build list.
+  // Colors are assigned via <basematerials> -- part of the 3MF CORE
+  // spec, not an optional extension -- rather than the Materials-
+  // extension <m:colorgroup> used previously. basematerials is the
+  // mechanism 3MF was actually designed around for "this part is made
+  // of a distinct named material/filament with this color," and every
+  // compliant reader has to support it (colorgroup is newer/optional
+  // and support for using it to color a whole object, rather than paint
+  // a single mesh, is inconsistent across slicers -- which is why color
+  // wasn't sticking). Each layer becomes its own <base name="..."
+  // displaycolor="..."/> entry, so slicers that auto-create a filament
+  // per distinct material -- which is standard behavior -- will register
+  // one new filament per color and assign it to the matching part.
+  //
+  // Each color's mesh is still its own <object> (now pid/pindex points
+  // at the basematerials group), and none of those part-objects go into
+  // <build> directly -- they're nested under one parent object via
+  // <components>, with only the parent placed via a single <item>. That
+  // shape is what tells a slicer this is ONE multi-color object made of
+  // parts, rather than several unrelated objects sharing a plate.
   //
   // Every object/component/item still carries a Production Extension
   // p:UUID and every placement (component + item) has an explicit
   // identity transform, for the same "don't rely on defaults" reasons
   // as before.
   function layersTo3MF(layers, printWidthMM, thicknessMM){
-    const colorGroupId = 1;
-    const colorTags = layers.map(l => '<m:color color="' + l.hex.toUpperCase() + 'FF"/>').join('');
+    const materialsId = 1;
+    const baseTags = layers.map((l, i) =>
+      '<base name="Color ' + (i+1) + ' ' + l.hex.toUpperCase() + '" displaycolor="' + l.hex.toUpperCase() + 'FF"/>'
+    ).join('');
 
     const partObjectTags = [];
     const componentTags = [];
+    const partObjIds = [];
     layers.forEach((layer, i) => {
-      const objId = colorGroupId + 1 + i;
+      const objId = materialsId + 1 + i;
+      partObjIds.push(objId);
       const scale = printWidthMM / layer.w;
       const triangles = buildSolidMesh(layer.loops, layer.smooth, 8, scale, scale, thicknessMM);
       const meshXML = triangles3MFMeshXML(triangles);
       partObjectTags.push(
-        '<object id="' + objId + '" type="model" pid="' + colorGroupId + '" pindex="' + i + '" p:UUID="' + makeUUID() + '">' +
+        '<object id="' + objId + '" type="model" pid="' + materialsId + '" pindex="' + i + '" p:UUID="' + makeUUID() + '">' +
         meshXML +
         '</object>'
       );
@@ -1596,7 +1664,7 @@
       componentTags.push('<component objectid="' + objId + '" transform="1 0 0 0 1 0 0 0 1 0 0 0"/>');
     });
 
-    const parentObjId = colorGroupId + 1 + layers.length;
+    const parentObjId = materialsId + 1 + layers.length;
     const parentObjectTag =
       '<object id="' + parentObjId + '" type="model" p:UUID="' + makeUUID() + '">' +
       '<components>' + componentTags.join('') + '</components>' +
@@ -1606,11 +1674,10 @@
       '<?xml version="1.0" encoding="UTF-8"?>' +
       '<model unit="millimeter" xml:lang="en-US" ' +
       'xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02" ' +
-      'xmlns:m="http://schemas.microsoft.com/3dmanufacturing/material/2015/02" ' +
       'xmlns:p="http://schemas.microsoft.com/3dmanufacturing/production/2015/06" ' +
       'requiredextensions="p">' +
       '<resources>' +
-      '<m:colorgroup id="' + colorGroupId + '">' + colorTags + '</m:colorgroup>' +
+      '<basematerials id="' + materialsId + '">' + baseTags + '</basematerials>' +
       partObjectTags.join('') +
       parentObjectTag +
       '</resources>' +
@@ -1624,6 +1691,7 @@
       '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
       '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
       '<Default Extension="model" ContentType="application/vnd.ms-package.3dmanufacturing-3dmodel+xml"/>' +
+      '<Default Extension="config" ContentType="application/octet-stream"/>' +
       '</Types>';
 
     const relsXML =
@@ -1632,10 +1700,15 @@
       '<Relationship Target="/3D/3dmodel.model" Id="rel0" Type="http://schemas.microsoft.com/3dmanufacturing/2013/01/3dmodel"/>' +
       '</Relationships>';
 
+    const projectSettingsConfig = buildProjectSettingsConfig(layers);
+    const modelSettingsConfig = buildModelSettingsConfig(parentObjId, partObjIds, layers);
+
     const files = [
       { name: '[Content_Types].xml', data: contentTypesXML },
       { name: '_rels/.rels', data: relsXML },
-      { name: '3D/3dmodel.model', data: modelXML }
+      { name: '3D/3dmodel.model', data: modelXML },
+      { name: 'Metadata/project_settings.config', data: projectSettingsConfig },
+      { name: 'Metadata/model_settings.config', data: modelSettingsConfig }
     ];
     return makeZip(files);
   }
