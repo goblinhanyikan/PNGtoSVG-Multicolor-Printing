@@ -1,6 +1,8 @@
 # PNGtoSVG-Multicolor-Printing
 Experimental tool that converts png files to svg, then creates seperate stl files for each colors, allowing the user to print PNG files with multicolor capabilities.
+
 DISCLAIMER: This app is made with the assistance of AI. If you are avoiding AI for ethical reasons, I totally understand.
+
 A tiny, dependency-free PNG → SVG converter that runs entirely in the browser.
 No upload, no backend, no build step — open `index.html` and it works.
 
@@ -75,7 +77,9 @@ multi-color/multi-material printing:
   shape is filled in, everything else is empty. That means if you import
   all of them into the same slicer project without moving or rescaling
   them, they land in register and reassemble into the original picture,
-  ready to be extruded as separate parts/colors.
+  ready to be extruded as separate parts/colors. The colored SVG files
+  can also be exported as STL, 3MF, or be bundled in an uncompressed ZIP file.
+  Current version works most reliably when the user downloads the stls for each color seperately. 
 - There's no bundled "download all" — grab the ones you need individually,
   since not every project uses every color.
 - Seams between colors are never rounded (see above), so adjacent layers
