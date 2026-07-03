@@ -1,0 +1,1696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>png to svg for multicolor printing - by goblinhan yıkan</title>
+<style>
+  :root{
+    --bg:#140f18;
+    --panel:#1e1620;
+    --panel-2:#251b29;
+    --line:#3d2c44;
+    --purple:#c497e0;
+    --white:#f3e9f6;
+    --dim:#9c8aa6;
+    --fg:#ede3f0;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--fg);
+    font-family:'JetBrains Mono','Space Mono',ui-monospace,Menlo,Consolas,monospace;
+    min-height:100vh;
+    position:relative;
+    overflow-x:hidden;
+  }
+  body::before{
+    content:"";
+    position:fixed; inset:0;
+    background:repeating-linear-gradient(
+      to bottom,
+      rgba(255,255,255,0.018) 0px,
+      rgba(255,255,255,0.018) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+    pointer-events:none;
+    z-index:50;
+  }
+  header{
+    padding:22px 24px;
+    border-bottom:1px solid var(--line);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:12px;
+  }
+  .brand-row{
+    display:flex;
+    align-items:center;
+    gap:14px;
+  }
+  .logo-mark{
+    width:38px; height:38px;
+    border-radius:6px;
+    flex:none;
+    overflow:hidden;
+    object-fit:cover;
+  }
+  .brand{
+    font-size:19px;
+    font-weight:700;
+    letter-spacing:0.3px;
+    color:var(--fg);
+    line-height:1.3;
+  }
+  .brand-credit{
+    font-size:11px;
+    font-weight:600;
+    letter-spacing:0.8px;
+    color:var(--purple);
+    margin-top:2px;
+  }
+  .tagline{
+    font-size:11px;
+    color:var(--dim);
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    margin-top:4px;
+  }
+  .header-right{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .badge{
+    font-size:10px;
+    letter-spacing:1px;
+    color:var(--white);
+    border:1px solid var(--line);
+    padding:4px 8px;
+    border-radius:2px;
+    text-transform:uppercase;
+    white-space:nowrap;
+  }
+  .lang-btn{
+    font-size:10px;
+    letter-spacing:1px;
+    color:var(--fg);
+    background:transparent;
+    border:1px solid var(--line);
+    padding:5px 10px;
+    border-radius:2px;
+    text-transform:uppercase;
+    font-family:inherit;
+    cursor:pointer;
+  }
+  .lang-btn:hover{border-color:var(--purple); color:var(--purple);}
+  main{
+    max-width:1200px;
+    margin:0 auto;
+    padding:24px;
+    display:grid;
+    grid-template-columns:280px 1fr 1fr;
+    gap:18px;
+  }
+  @media (max-width:900px){
+    main{grid-template-columns:1fr;}
+  }
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:3px;
+    padding:16px;
+  }
+  .panel-title{
+    font-size:10px;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    color:var(--dim);
+    margin:0 0 14px;
+    display:flex;
+    justify-content:space-between;
+  }
+  .drop{
+    border:1px dashed var(--line);
+    border-radius:3px;
+    padding:28px 12px;
+    text-align:center;
+    cursor:pointer;
+    font-size:12px;
+    color:var(--dim);
+    transition:border-color .15s, color .15s;
+  }
+  .drop:hover, .drop.drag{
+    border-color:var(--purple);
+    color:var(--purple);
+  }
+  input[type=file]{display:none;}
+  .field{margin-top:16px;}
+  .field label{
+    display:flex;
+    justify-content:space-between;
+    font-size:11px;
+    color:var(--dim);
+    margin-bottom:6px;
+    text-transform:uppercase;
+    letter-spacing:1px;
+  }
+  .field label .val{color:var(--purple);}
+  input[type=range]{
+    width:100%;
+    accent-color:var(--purple);
+    background:transparent;
+  }
+  select{
+    width:100%;
+    background:var(--panel-2);
+    color:var(--fg);
+    border:1px solid var(--line);
+    padding:8px;
+    font-family:inherit;
+    font-size:12px;
+    border-radius:2px;
+  }
+  input[type=color]{
+    width:100%; height:32px;
+    border:1px solid var(--line);
+    background:var(--panel-2);
+    border-radius:2px;
+    cursor:pointer;
+    padding:2px;
+  }
+  input[type=number]{
+    width:100%;
+    background:var(--panel-2);
+    color:var(--fg);
+    border:1px solid var(--line);
+    padding:8px;
+    font-family:inherit;
+    font-size:12px;
+    border-radius:2px;
+  }
+  .check-row{
+    margin-top:10px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:11px;
+    color:var(--fg);
+    cursor:pointer;
+    text-transform:uppercase;
+    letter-spacing:1px;
+  }
+  .check-row input{width:auto; accent-color:var(--purple);}
+  .pf-block{
+    border:1px solid var(--line);
+    border-radius:3px;
+    padding:12px;
+    background:var(--panel-2);
+  }
+  .pf-hint{
+    margin-top:8px;
+    font-size:10px;
+    line-height:1.5;
+    color:var(--dim);
+    letter-spacing:0.2px;
+    text-transform:none;
+  }
+  button{
+    font-family:inherit;
+    cursor:pointer;
+  }
+  .run-btn{
+    margin-top:20px;
+    width:100%;
+    background:var(--purple);
+    color:#22102b;
+    border:none;
+    padding:12px;
+    font-weight:700;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    font-size:12px;
+    border-radius:2px;
+  }
+  .run-btn:disabled{
+    background:var(--line);
+    color:var(--dim);
+    cursor:not-allowed;
+  }
+  .run-btn:hover:not(:disabled){filter:brightness(1.1);}
+  .dl-btn{
+    margin-top:10px;
+    width:100%;
+    background:transparent;
+    border:1px solid var(--white);
+    color:var(--white);
+    padding:10px;
+    font-size:12px;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    border-radius:2px;
+  }
+  .dl-btn:hover{background:rgba(243,233,246,0.08);}
+  .stage{
+    min-height:340px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:
+      linear-gradient(45deg,#241b29 25%,transparent 25%),
+      linear-gradient(-45deg,#241b29 25%,transparent 25%),
+      linear-gradient(45deg,transparent 75%,#241b29 75%),
+      linear-gradient(-45deg,transparent 75%,#241b29 75%);
+    background-size:16px 16px;
+    background-position:0 0, 0 8px, 8px -8px, -8px 0px;
+    background-color:#170f1a;
+    border:1px solid var(--line);
+    border-radius:2px;
+    overflow:hidden;
+    position:relative;
+  }
+  .stage img, .stage svg{
+    max-width:100%;
+    max-height:340px;
+  }
+  .placeholder{
+    color:var(--dim);
+    font-size:11px;
+    letter-spacing:1px;
+    text-align:center;
+    padding:20px;
+  }
+  .readout{
+    margin-top:14px;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+    font-size:11px;
+  }
+  .readout div{
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    border-radius:2px;
+    padding:8px 10px;
+  }
+  .readout .k{color:var(--dim); display:block; font-size:9px; letter-spacing:1px; text-transform:uppercase;}
+  .readout .v{color:var(--purple); font-size:14px; font-weight:700;}
+  .code-toggle{
+    margin-top:12px;
+    font-size:10px;
+    color:var(--dim);
+    letter-spacing:1px;
+    text-transform:uppercase;
+    cursor:pointer;
+    text-decoration:underline;
+    text-underline-offset:3px;
+  }
+  textarea{
+    width:100%;
+    height:140px;
+    margin-top:8px;
+    background:#170f1a;
+    color:var(--white);
+    border:1px solid var(--line);
+    font-family:inherit;
+    font-size:10px;
+    padding:10px;
+    resize:vertical;
+    border-radius:2px;
+  }
+  footer{
+    text-align:center;
+    color:var(--dim);
+    font-size:10px;
+    letter-spacing:1px;
+    padding:30px 20px 40px;
+  }
+  footer .disclaimer{
+    max-width:640px;
+    margin:14px auto 0;
+    font-size:9.5px;
+    line-height:1.6;
+    letter-spacing:0.3px;
+    color:var(--dim);
+    opacity:0.75;
+    text-transform:none;
+  }
+  footer .credit{
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:1px;
+    color:var(--purple);
+    text-transform:none;
+    margin-bottom:10px;
+  }
+  .layers-panel{ grid-column: 1 / -1; }
+  .layers-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(130px, 1fr));
+    gap:12px;
+    margin-top:6px;
+  }
+  .layer-card{
+    border:1px solid var(--line);
+    border-radius:3px;
+    padding:10px;
+    background:var(--panel-2);
+    text-align:center;
+  }
+  .layer-stage{
+    height:90px;
+    display:flex; align-items:center; justify-content:center;
+    background:
+      linear-gradient(45deg,#241b29 25%,transparent 25%),
+      linear-gradient(-45deg,#241b29 25%,transparent 25%),
+      linear-gradient(45deg,transparent 75%,#241b29 75%),
+      linear-gradient(-45deg,transparent 75%,#241b29 75%);
+    background-size:14px 14px;
+    background-position:0 0, 0 7px, 7px -7px, -7px 0px;
+    background-color:#170f1a;
+    border:1px solid var(--line);
+    border-radius:2px;
+    overflow:hidden;
+  }
+  .layer-stage svg{max-width:100%; max-height:100%;}
+  .layer-meta{
+    display:flex; align-items:center; justify-content:center; gap:6px;
+    margin-top:8px;
+  }
+  .layer-swatch{
+    width:12px; height:12px;
+    border-radius:2px;
+    border:1px solid rgba(255,255,255,0.2);
+    flex:none;
+  }
+  .layer-hex{
+    font-size:10px;
+    color:var(--dim);
+    letter-spacing:0.5px;
+  }
+  .layer-dl-btn{
+    margin-top:8px;
+    width:100%;
+    background:transparent;
+    border:1px solid var(--white);
+    color:var(--white);
+    padding:6px;
+    font-size:10px;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    border-radius:2px;
+    font-family:inherit;
+  }
+  .layer-dl-btn:hover{background:rgba(243,233,246,0.08);}
+  .spin{
+    width:16px;height:16px;border-radius:50%;
+    border:2px solid rgba(196,151,224,0.25);
+    border-top-color:var(--purple);
+    display:inline-block;
+    animation:sp .7s linear infinite;
+    vertical-align:-3px;
+    margin-right:8px;
+  }
+  @keyframes sp{to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand-row">
+    <div>
+      <div class="brand">png to svg for multicolor printing</div>
+      <div class="brand-credit">by goblinhan yıkan</div>
+      <div class="tagline" data-i18n="tagline">png → svg · runs entirely in your browser</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="badge" data-i18n="badge">◉ no server · no upload</div>
+    <button class="lang-btn" id="langToggle" data-i18n-title="tt_lang">TR</button>
+    <!-- YOUR LOGO GOES HERE — replace src="logo.png" with your own file,
+         placed next to this index.html. Hidden automatically if missing. -->
+    <img src="logo.png" class="logo-mark" alt="logo" onerror="this.style.display='none';">
+  </div>
+</header>
+
+<main>
+  <!-- CONTROLS -->
+  <div class="panel">
+    <p class="panel-title" data-i18n="panelInput">Input</p>
+    <div class="drop" id="drop" data-i18n-title="tt_drop">Drop a PNG here<br>or click to browse</div>
+    <input type="file" id="file" accept="image/*">
+
+    <div class="field pf-block">
+      <label class="check-row" style="text-transform:none; font-size:12px; color:var(--fg); justify-content:flex-start;">
+        <input type="checkbox" id="printFriendly" data-i18n-title="tt_printFriendly">
+        <span data-i18n="printFriendlyLabel">3D print friendly</span>
+      </label>
+      <div class="pf-hint" data-i18n="printFriendlyHint">Locks to a fixed color count and lets you download each color as its own aligned SVG or STL — import them as separate parts in your slicer for multi-color printing.</div>
+    </div>
+
+    <div class="field" id="stlDimsField" style="display:none;">
+      <label><span data-i18n="stlWidthLabel">Print width (mm)</span></label>
+      <input type="number" id="stlWidth" min="1" step="1" value="100" data-i18n-title="tt_stlWidth">
+      <label style="margin-top:10px;"><span data-i18n="stlThicknessLabel">Layer thickness (mm)</span></label>
+      <input type="number" id="stlThickness" min="0.05" step="0.05" value="0.4" data-i18n-title="tt_stlThickness">
+      <div class="pf-hint" data-i18n="stlHint">All color layers share this width and thickness, so their STLs stay in registration when loaded together in your slicer.</div>
+    </div>
+
+    <div class="field" id="printFriendlyColorsField" style="display:none;">
+      <label><span data-i18n="printFriendlyColorsLabel">Color count</span> <span class="val" id="printFriendlyColorsVal">4</span></label>
+      <input type="range" id="printFriendlyColors" min="2" max="8" step="1" value="4" data-i18n-title="tt_printFriendlyColors">
+    </div>
+
+    <div class="field" id="modeField">
+      <label data-i18n="modeLabel">Mode</label>
+      <select id="mode" data-i18n-title="tt_mode">
+        <option value="color" data-i18n="modeColor">Full color</option>
+        <option value="mono" data-i18n="modeMono">Monochrome</option>
+      </select>
+    </div>
+
+    <div class="field" id="colorField">
+      <label><span data-i18n="paletteLabel">Palette size</span> <span class="val" id="colorsVal">8</span></label>
+      <input type="range" id="colors" min="2" max="32" value="8" data-i18n-title="tt_colors">
+    </div>
+
+    <div class="field" id="monoField" style="display:none;">
+      <label><span data-i18n="thresholdLabel">Threshold</span> <span class="val" id="threshVal">128</span></label>
+      <input type="range" id="thresh" min="0" max="255" value="128" data-i18n-title="tt_thresh">
+      <label class="check-row">
+        <input type="checkbox" id="invert" data-i18n-title="tt_invert">
+        <span data-i18n="invertLabel">Invert</span>
+      </label>
+      <label style="margin-top:10px;" data-i18n="inkLabel">Ink color</label>
+      <input type="color" id="ink" value="#111111" data-i18n-title="tt_ink">
+    </div>
+
+    <div class="field">
+      <label><span data-i18n="sizeLabel">Max working size (px)</span> <span class="val" id="sizeVal">300</span></label>
+      <input type="range" id="size" min="64" max="2000" step="20" value="300" data-i18n-title="tt_size">
+    </div>
+
+    <div class="field">
+      <label><span data-i18n="alphaLabel">Alpha cutoff</span> <span class="val" id="alphaVal">128</span></label>
+      <input type="range" id="alpha" min="0" max="255" value="128" data-i18n-title="tt_alpha">
+    </div>
+
+    <div class="field">
+      <label><span data-i18n="smoothLabel">Corner smoothing</span> <span class="val" id="smoothVal">0</span></label>
+      <input type="range" id="smooth" min="0" max="6" step="0.2" value="0" data-i18n-title="tt_smooth">
+    </div>
+
+    <button class="run-btn" id="run" data-i18n="runBtn" data-i18n-title="tt_run" disabled>Vectorize</button>
+    <button class="dl-btn" id="dl" data-i18n="dlBtn" data-i18n-title="tt_dl" style="display:none;">Download .svg</button>
+  </div>
+
+  <!-- SOURCE -->
+  <div class="panel">
+    <p class="panel-title" data-i18n="panelSource">Source raster</p>
+    <div class="stage" id="srcStage"><div class="placeholder" data-i18n="placeholderNoImage">— no image loaded —</div></div>
+  </div>
+
+  <!-- OUTPUT -->
+  <div class="panel">
+    <p class="panel-title"><span data-i18n="panelOutput">Vector output</span> <span id="status"></span></p>
+    <div class="stage" id="outStage"><div class="placeholder" data-i18n="placeholderAwaiting">— awaiting trace —</div></div>
+    <div class="readout" id="readout" style="display:none;">
+      <div><span class="k" data-i18n="statColors">colors</span><span class="v" id="rColors">–</span></div>
+      <div><span class="k" data-i18n="statPaths">paths</span><span class="v" id="rPaths">–</span></div>
+      <div><span class="k" data-i18n="statNodes">nodes</span><span class="v" id="rNodes">–</span></div>
+      <div><span class="k" data-i18n="statSize">canvas</span><span class="v" id="rSize">–</span></div>
+    </div>
+    <div class="code-toggle" id="codeToggle" data-i18n="toggleShow" style="display:none;">show svg source</div>
+    <textarea id="codeBox" style="display:none;" readonly></textarea>
+  </div>
+
+  <!-- PRINT-FRIENDLY PER-COLOR LAYERS -->
+  <div class="panel layers-panel" id="layersPanel" style="display:none;">
+    <p class="panel-title" data-i18n="layersTitle">Print layers · download each color separately</p>
+    <div class="layers-grid" id="layersGrid"></div>
+    <button class="dl-btn" id="dlAll3mf" data-i18n="downloadAll3mf" data-i18n-title="tt_dlAll3mf" style="max-width:320px; margin:16px auto 0; display:block;">Download all as 3MF (colored)</button>
+    <button class="dl-btn" id="dlAllStl" data-i18n="downloadAllStl" data-i18n-title="tt_dlAllStl" style="max-width:320px; margin:10px auto 0; display:block;">Download all as STL (.zip)</button>
+  </div>
+</main>
+
+<footer>
+  <div class="credit">png to svg for multicolor printing — by goblinhan yıkan</div>
+  <div data-i18n="footer">MIT licensed · open source · client-side vectorization via color quantization + boundary tracing</div>
+  <div class="disclaimer" data-i18n="disclaimer">This tool is provided "as is", without warranty of any kind. The developer assumes no responsibility or liability for any errors, inaccuracies, print failures, material waste, damage to equipment, or any other loss arising from the use of this software or the files it generates — this includes SVG and STL output used for 3D printing, cutting, or engraving. Always inspect generated geometry before fabricating with it. Licensed under the MIT License; source code may be freely used, modified, and redistributed.</div>
+</footer>
+
+<!-- earcut v3.2.3 (ISC License, Copyright (c) 2026 Mapbox) — inlined so the
+     app stays fully self-contained/offline. Used only for 2D polygon-with-holes
+     triangulation when exporting the print-friendly layers as STL. -->
+<script>
+!function(t,n){"object"==typeof exports&&"undefined"!=typeof module?n(exports):"function"==typeof define&&define.amd?define(["exports"],n):n((t="undefined"!=typeof globalThis?globalThis:t||self).earcut={})}(this,function(t){"use strict";const n=new Set;let e=!1;function r(t,n,e,r,x){let o=null;if(x===G(t,n,e,r)>0)for(let x=n;x<e;x+=r)o=C(x/r|0,t[x],t[x+1],o);else for(let x=e-r;x>=n;x-=r)o=C(x/r|0,t[x],t[x+1],o);return o&&O(o,o.next)&&(D(o),o=o.next),o}function x(t,r=t){const x=r===t;let o,i=t;do{o=!1,i===i.next||0!==n.size&&n.has(i)||!O(i,i.next)&&0!==_(i.prev,i,i.next)?(x||i!==r)&&(i=i.next,o=!x):((x||i===r)&&(r=i.prev),e=!0,D(i),i=i.prev,o=!0)}while(o||i!==r);return r}function o(t,n,r,o,c){c&&function(t,n,e,r){let x=t,o=0;do{x.z=j(x.x,x.y,n,e,r),Z[o++]=x,x=x.next}while(x!==t);!function(t){if(t<=32){for(let n=1;n<t;n++){const t=Z[n],e=t.z;let r=n-1;for(;r>=0&&Z[r].z>e;)Z[r+1]=Z[r],r--;Z[r+1]=t}return}b.length<t&&(b=new Uint32Array(t),z=new Uint32Array(t),A=new Array(t));for(let n=0;n<t;n++)b[n]=Z[n].z;I(t,Z,b,A,z,0),I(t,A,z,Z,b,8),I(t,Z,b,A,z,16),I(t,A,z,Z,b,24)}(o);let i=null;for(let t=0;t<o;t++){const n=Z[t];n.prevZ=i,i&&(i.nextZ=n),i=n}i.nextZ=null}(t,r,o,c);let y=t,s=!1;for(;t.prev!==t.next;){const a=t.prev,h=t.next;if(_(a,t,h)<0&&(c?l(t,r,o,c):i(t)))n.push(a.i,t.i,h.i),D(t),t=h,y=h;else if((t=h)===y){if(e=!1,t=x(t),e){y=t;continue}if(!s){y=t=f(t,n),s=!0;continue}u(t,n,r,o,c);break}}}function i(t){const n=t.prev,e=t,r=t.next,x=n.x,o=e.x,i=r.x,l=n.y,f=e.y,u=r.y,c=Math.min(x,o,i),y=Math.min(l,f,u),s=Math.max(x,o,i),a=Math.max(l,f,u);let h=r.next;for(;h!==n;){if(h.x>=c&&h.x<=s&&h.y>=y&&h.y<=a&&(x!==h.x||l!==h.y)&&F(x,l,o,f,i,u,h.x,h.y)&&_(h.prev,h,h.next)>=0)return!1;h=h.next}return!0}function l(t,n,e,r){const x=t.prev,o=t,i=t.next,l=x.x,f=o.x,u=i.x,c=x.y,y=o.y,s=i.y,a=Math.min(l,f,u),h=Math.min(c,y,s),p=Math.max(l,f,u),v=Math.max(c,y,s),d=j(a,h,n,e,r),M=j(p,v,n,e,r);let w=t.prevZ;for(;w&&w.z>=d;){if(w.x>=a&&w.x<=p&&w.y>=h&&w.y<=v&&w!==i&&(l!==w.x||c!==w.y)&&F(l,c,f,y,u,s,w.x,w.y)&&_(w.prev,w,w.next)>=0)return!1;w=w.prevZ}let g=t.nextZ;for(;g&&g.z<=M;){if(g.x>=a&&g.x<=p&&g.y>=h&&g.y<=v&&g!==i&&(l!==g.x||c!==g.y)&&F(l,c,f,y,u,s,g.x,g.y)&&_(g.prev,g,g.next)>=0)return!1;g=g.nextZ}return!0}function f(t,n){let e=t,r=!1;do{const x=e.prev,o=e.next.next;P(x,e,e.next,o,!1)&&q(x,o)&&q(o,x)&&(n.push(x.i,e.i,o.i),D(e),D(e.next),e=t=o,r=!0),e=e.next}while(e!==t);return r?x(e):e}function u(t,n,e,r,i){let l=t;do{let t=l.next.next;for(;t!==l.prev;){if(l.i!==t.i&&T(l,t)){let f=B(l,t);return l=x(l,l.next),f=x(f,f.next),o(l,n,e,r,i),void o(f,n,e,r,i)}t=t.next}l=l.next}while(l!==t)}let c=!1;function y(t,n){return t.x-n.x||t.y-n.y||(t.next.y-t.y)/(t.next.x-t.x)-(n.next.y-n.y)/(n.next.x-n.x)}function s(t,n){const e=function(t,n){let e=n;const r=t.x,x=t.y;let o,i=-1/0;if(O(t,e))return e;for(let n=0,l=0;n<p;n++,l+=4){if(x<h[l+1]||x>h[l+3]||h[l]>r||h[l+2]<=i)continue;const f=w(n);e=g(n);do{if(e.prev.next===e){if(O(t,e.next))return e.next;if(x<=e.y&&x>=e.next.y&&e.next.y!==e.y){const t=e.x+(x-e.y)*(e.next.x-e.x)/(e.next.y-e.y);if(t<=r&&t>i&&(i=t,o=e.x<e.next.x?e:e.next,t===r))return o}}e=e.next}while(e!==f)}if(!o)return null;const l=o.x,f=o.y,u=Math.min(x,f),c=Math.max(x,f);let y=1/0;for(let n=0,s=0;n<p;n++,s+=4){if(h[s+2]<l||h[s]>r||h[s+3]<u||h[s+1]>c)continue;const a=w(n);e=g(n);do{if(e.prev.next===e&&r>=e.x&&e.x>=l&&r!==e.x&&F(x<f?r:i,x,l,f,x<f?i:r,x,e.x,e.y)){const n=Math.abs(x-e.y)/(r-e.x);(q(e,t)||e.y===x&&e.next.y===x&&e.next.x>r)&&(n<y||n===y&&(e.x>o.x||e.x===o.x&&m(o,e)))&&(o=e,y=n)}e=e.next}while(e!==a)}return o}(t,n);if(!e)return n;const r=B(e,t);return M(e,r.next.next),x(r,r.next),x(e,e.next)}const a=16;let h=new Float64Array(0),p=0;const v=[],d=[];function M(t,n){let e=t;do{const t=p++;v[t]=e;let r=1/0,x=1/0,o=-1/0,i=-1/0,l=0;do{const n=e.next;e.z=t,e.x<r&&(r=e.x),e.x>o&&(o=e.x),e.y<x&&(x=e.y),e.y>i&&(i=e.y),n.x<r&&(r=n.x),n.x>o&&(o=n.x),n.y<x&&(x=n.y),n.y>i&&(i=n.y),e=n}while(++l<a&&e!==n);d[t]=e;const f=4*t;h[f]=r,h[f+1]=x,h[f+2]=o,h[f+3]=i}while(e!==n)}function w(t){let n=d[t];for(;n.prev.next!==n;)n=n.next;return d[t]=n,n}function g(t){let n=v[t];for(;n.prev.next!==n;)n=n.next;return v[t]=n,n}function m(t,n){return _(t.prev,t,n.prev)<0&&_(n.next,t,t.next)<0}const Z=[];let A=[],b=new Uint32Array(0),z=new Uint32Array(0);const U=new Uint32Array(256);function I(t,n,e,r,x,o){U.fill(0);for(let n=0;n<t;n++)U[e[n]>>>o&255]++;let i=0;for(let t=0;t<256;t++){const n=U[t];U[t]=i,i+=n}for(let i=0;i<t;i++){const t=e[i],l=U[t>>>o&255]++;r[l]=n[i],x[l]=t}}function j(t,n,e,r,x){return(t=1431655765&((t=858993459&((t=252645135&((t=16711935&((t=(t-e)*x|0)|t<<8))|t<<4))|t<<2))|t<<1))|(n=1431655765&((n=858993459&((n=252645135&((n=16711935&((n=(n-r)*x|0)|n<<8))|n<<4))|n<<2))|n<<1))<<1}function k(t){let n=t,e=t;do{(n.x<e.x||n.x===e.x&&n.y<e.y)&&(e=n),n=n.next}while(n!==t);return e}function F(t,n,e,r,x,o,i,l){return(x-i)*(n-l)>=(t-i)*(o-l)&&(t-i)*(r-l)>=(e-i)*(n-l)&&(e-i)*(o-l)>=(x-i)*(r-l)}function T(t,n){const e=O(t,n)&&_(t.prev,t,t.next)>0&&_(n.prev,n,n.next)>0;return t.next.i!==n.i&&(e||q(t,n)&&q(n,t)&&(0!==_(t.prev,t,n.prev)||0!==_(t,n.prev,n)))&&!function(t,n){const e=Math.min(t.x,n.x),r=Math.max(t.x,n.x),x=Math.min(t.y,n.y),o=Math.max(t.y,n.y);let i=t;do{const l=i.next;if(i.x>r&&l.x>r||i.x<e&&l.x<e||i.y>o&&l.y>o||i.y<x&&l.y<x)i=l;else{if(i.i!==t.i&&l.i!==t.i&&i.i!==n.i&&l.i!==n.i&&P(i,l,t,n))return!0;i=l}}while(i!==t);return!1}(t,n)&&(e||function(t,n){let e=t,r=!1;const x=(t.x+n.x)/2,o=(t.y+n.y)/2;do{const t=e.next;e.y>o!=t.y>o&&x<(t.x-e.x)*(o-e.y)/(t.y-e.y)+e.x&&(r=!r),e=t}while(e!==t);return r}(t,n))}function _(t,n,e){return(n.y-t.y)*(e.x-n.x)-(n.x-t.x)*(e.y-n.y)}function O(t,n){return t.x===n.x&&t.y===n.y}function P(t,n,e,r,x=!0){const o=_(t,n,e),i=_(t,n,r),l=_(e,r,t),f=_(e,r,n);return(o>0&&i<0||o<0&&i>0)&&(l>0&&f<0||l<0&&f>0)||!!x&&(!(0!==o||!S(t,e,n))||(!(0!==i||!S(t,r,n))||(!(0!==l||!S(e,t,r))||!(0!==f||!S(e,n,r)))))}function S(t,n,e){return n.x<=Math.max(t.x,e.x)&&n.x>=Math.min(t.x,e.x)&&n.y<=Math.max(t.y,e.y)&&n.y>=Math.min(t.y,e.y)}function q(t,n){return _(t.prev,t,t.next)<0?_(t,n,t.next)>=0&&_(t,t.prev,n)>=0:_(t,n,t.prev)<0||_(t,t.next,n)<0}function B(t,n){const e=E(t.i,t.x,t.y),r=E(n.i,n.x,n.y),x=t.next,o=n.prev;return t.next=n,n.prev=t,e.next=x,x.prev=e,r.next=e,e.prev=r,o.next=r,r.prev=o,r}function C(t,n,e,r){const x=E(t,n,e);return r?(x.next=r.next,x.prev=r,r.next.prev=x,r.next=x):(x.prev=x,x.next=x),x}function D(t){t.next.prev=t.prev,t.prev.next=t.next,t.prevZ&&(t.prevZ.nextZ=t.nextZ),t.nextZ&&(t.nextZ.prevZ=t.prevZ),c&&function(t,n){const e=4*t.z;n.x<h[e]&&(h[e]=n.x),n.y<h[e+1]&&(h[e+1]=n.y),n.x>h[e+2]&&(h[e+2]=n.x),n.y>h[e+3]&&(h[e+3]=n.y)}(t.prev,t.next)}function E(t,n,e){return{i:t,x:n,y:e,prev:null,next:null,z:0,prevZ:null,nextZ:null}}function G(t,n,e,r){let x=0;for(let o=n,i=e-r;o<e;o+=r)x+=(t[i]-t[o])*(t[o+1]+t[i+1]),i=o;return x}let H,J,K,L,N,Q=0,R=0;function V(t,n,e,r,x,o){return(e-t)*(o-n)-(r-n)*(x-t)}function W(t,n,e,r,x,o,i,l){const f=t-i,u=n-l,c=e-i,y=r-l,s=x-i,a=o-l,h=f*f+u*u,p=c*c+y*y,v=s*s+a*a,d=h+p+v;return f*(y*v-p*a)-u*(c*v-p*s)+h*(c*a-y*s)<=1e-13*d*d}function X(t){return t-t%3+(t+1)%3}t.default=function(t,e,i=2){const l=e&&e.length,f=l?e[0]*i:t.length;n.size&&n.clear();let u=r(t,0,f,i,!0);const v=[];if(!u||u.next===u.prev)return v;let d=0,w=0,g=0;if(l&&(u=function(t,e,o,i){const l=[];for(let x=0,o=e.length;x<o;x++){const f=r(t,e[x]*i,x<o-1?e[x+1]*i:t.length,i,!1);f===f.next&&n.add(f),l.push(k(f))}l.sort(y),function(t,n){const e=Math.ceil((t+2*n)/a)+n+2;h.length<4*e&&(h=new Float64Array(4*e));p=0}(t.length/i,e.length),M(o,o),c=!0;for(let t=0;t<l.length;t++)o=s(l[t],o);return c=!1,x(o)}(t,e,u,i)),t.length>80*i){d=t[0],w=t[1];let n=d,e=w;for(let r=i;r<f;r+=i){const x=t[r],o=t[r+1];x<d&&(d=x),o<w&&(w=o),x>n&&(n=x),o>e&&(e=o)}g=Math.max(n-d,e-w),g=0!==g?32767/g:0}return o(u,v,d,w,g),v},t.deviation=function(t,n,e,r){const x=n&&n.length,o=x?n[0]*e:t.length;let i=Math.abs(G(t,0,o,e));if(x)for(let r=0,x=n.length;r<x;r++){const o=n[r]*e,l=r<x-1?n[r+1]*e:t.length;i-=Math.abs(G(t,o,l,e))}let l=0;for(let n=0;n<r.length;n+=3){const x=r[n]*e,o=r[n+1]*e,i=r[n+2]*e;l+=Math.abs((t[x]-t[i])*(t[o+1]-t[x+1])-(t[x]-t[o])*(t[i+1]-t[x+1]))}return 0===i&&0===l?0:Math.abs((l-i)/i)},t.flatten=function(t){const n=[],e=[],r=t[0][0].length;let x=0,o=0;for(const i of t){for(const t of i)for(let e=0;e<r;e++)n.push(t[e]);o&&(x+=o,e.push(x)),o=i.length}return{vertices:n,holes:e,dimensions:r}},t.refine=function(t,n,e=2){const r=t,x=r.length;if(x<6)return;!function(t){(!H||H.length<t)&&(H=new Int32Array(t));(!J||J.length<t)&&(J=new Int32Array(t));(!N||N.length<t)&&(N=new Uint8Array(t));let n=1;for(;n<4*t;)n<<=1;(!K||K.length<n)&&(K=new Int32Array(n),L=new Uint32Array(n));Q=n-1}(x),R++,J.fill(-1,0,x);let o=0;for(let t=0;t<x;t++){const n=r[t],e=r[X(t)],x=n<e?n:e,i=n<e?e:n;let l=(Math.imul(x,2654435761)^Math.imul(i,2246822507))&Q;for(;L[l]===R;){const n=K[l];if(-1!==n){const e=r[n],f=r[X(n)];if(e===x&&f===i||e===i&&f===x){J[t]=n,J[n]=t,K[l]=-1,N[n]=1,H[o++]=n;break}}l=l+1&Q}L[l]!==R&&(K[l]=t,L[l]=R)}for(;o>0;){const t=H[--o];N[t]=0;const x=J[t];if(-1===x)continue;const i=t-t%3,l=x-x%3,f=i+(t+2)%3,u=i+(t+1)%3,c=l+(x+2)%3,y=l+(x+1)%3,s=r[f],a=r[t],h=r[u],p=r[c],v=n[s*e],d=n[s*e+1],M=n[a*e],w=n[a*e+1],g=n[h*e],m=n[h*e+1],Z=n[p*e],A=n[p*e+1];if(!W(v,d,M,w,g,m,Z,A)&&V(v,d,M,w,Z,A)>0&&V(v,d,Z,A,g,m)>0){r[t]=p,r[x]=s;const n=J[c],e=J[f];J[t]=n,-1!==n&&(J[n]=t),J[x]=e,-1!==e&&(J[e]=x),J[f]=c,J[c]=f,-1!==n&&0===N[t]&&(N[t]=1,H[o++]=t),-1!==e&&0===N[x]&&(N[x]=1,H[o++]=x),-1!==J[u]&&0===N[u]&&(N[u]=1,H[o++]=u),-1!==J[y]&&0===N[y]&&(N[y]=1,H[o++]=y)}}},Object.defineProperty(t,"__esModule",{value:!0})});
+
+</script>
+
+<script>
+(function(){
+  // ---------------------------------------------------------------
+  // i18n
+  // ---------------------------------------------------------------
+  const STRINGS = {
+    en: {
+      tagline: 'png → svg · runs entirely in your browser',
+      badge: '◉ no server · no upload',
+      panelInput: 'Input',
+      dropText: 'Drop a PNG here<br>or click to browse',
+      modeLabel: 'Mode',
+      modeColor: 'Full color',
+      modeMono: 'Monochrome',
+      paletteLabel: 'Palette size',
+      thresholdLabel: 'Threshold',
+      invertLabel: 'Invert',
+      inkLabel: 'Ink color',
+      sizeLabel: 'Max working size (px)',
+      alphaLabel: 'Alpha cutoff',
+      smoothLabel: 'Corner smoothing',
+      printFriendlyLabel: '3D print friendly',
+      printFriendlyHint: 'Locks to a fixed color count and lets you download each color as its own aligned SVG or STL — import them as separate parts in your slicer for multi-color printing.',
+      stlWidthLabel: 'Print width (mm)',
+      stlThicknessLabel: 'Layer thickness (mm)',
+      stlHint: 'All color layers share this width and thickness, so their STLs stay in registration when loaded together in your slicer.',
+      printFriendlyColorsLabel: 'Color count',
+      layersTitle: 'Print layers · download each color separately(Highest success rate)',
+      layerDl: 'Download',
+      layerDlSvg: 'SVG',
+      layerDlStl: 'STL',
+      downloadAllStl: 'Download all as STL (.zip)(EXPERIMENTAL, Success rate may vary)',
+      downloadAll3mf: 'Download all as 3MF (colored)(EXPERIMENTAL, Success rate may vary)',
+      buildingZip: 'building zip…',
+      building3mf: 'building 3mf…',
+      runBtn: 'Vectorize',
+      dlBtn: 'Download .svg',
+      panelSource: 'Source raster',
+      panelOutput: 'Vector output',
+      statColors: 'colors',
+      statPaths: 'paths',
+      statNodes: 'nodes',
+      statSize: 'canvas',
+      footer: 'MIT licensed · open source · client-side vectorization via color quantization + boundary tracing',
+      disclaimer: 'This tool is provided "as is", without warranty of any kind. The developer assumes no responsibility or liability for any errors, inaccuracies, print failures, material waste, damage to equipment, or any other loss arising from the use of this software or the files it generates — this includes SVG and STL output used for 3D printing, cutting, or engraving. Always inspect generated geometry before fabricating with it. Licensed under the MIT License; source code may be freely used, modified, and redistributed.',
+      placeholderNoImage: '— no image loaded —',
+      placeholderAwaiting: '— awaiting trace —',
+      placeholderFailed: 'trace failed — try a smaller working size',
+      statusTracing: 'tracing…',
+      toggleShow: 'show svg source',
+      toggleHide: 'hide svg source',
+      tt_drop: 'Click to browse, or drag and drop a PNG file onto this area.',
+      tt_printFriendly: 'Fixes the palette to a chosen color count and unlocks per-color SVG and STL export, so each color can be imported as a separate registered part for multi-color/multi-material printing.',
+      tt_stlWidth: 'Real-world width in millimeters for the exported STL. All color layers use this same width so their meshes stay aligned.',
+      tt_stlThickness: 'Extrusion height in millimeters for every color layer\u2019s STL solid. All layers share this thickness so they sit flush together.',
+      tt_printFriendlyColors: 'Number of distinct colors to extract from the image when print-friendly mode is on.',
+      tt_mode: 'Full color traces multiple colors via palette extraction; Monochrome traces a single ink color using a brightness threshold.',
+      tt_colors: 'Number of colors the palette extraction (k-means) will try to find in the image.',
+      tt_thresh: 'Brightness cutoff for monochrome tracing \u2014 pixels darker than this become ink.',
+      tt_invert: 'Swaps which side of the brightness threshold counts as ink vs. background.',
+      tt_ink: 'The fill color used for traced pixels in monochrome mode.',
+      tt_size: 'Maximum image dimension (in pixels) used while tracing. Higher values capture more detail but take longer to process and produce heavier SVG/STL output.',
+      tt_alpha: 'Minimum opacity for a pixel to be treated as part of the image rather than transparent background.',
+      tt_smooth: 'Rounds outer corners of traced shapes. Seams between two colors are never rounded, so multi-color parts stay gap-free.',
+      tt_run: 'Trace the loaded PNG into vector paths using the current settings.',
+      tt_dl: 'Download the combined multi-color SVG.',
+      tt_layerSvg: 'Download this color as a standalone SVG, aligned to the same canvas as the other colors.',
+      tt_layerStl: 'Download this color as a 3D-printable STL solid, using the print width and layer thickness set above.',
+      tt_dlAllStl: 'Download every color layer as STL files bundled in a single .zip.',
+      tt_dlAll3mf: 'Download every color layer bundled into a single 3MF file, with each layer\\u2019s color embedded and all layers kept in perfect registration — no manual per-layer alignment needed in your slicer.',
+      tt_lang: 'Switch interface language between English and Turkish.'
+    },
+    tr: {
+      tagline: 'png → svg · tamamen tarayıcınızda çalışır',
+      badge: '◉ sunucu yok · yükleme yok',
+      panelInput: 'Girdi',
+      dropText: 'Bir PNG dosyasını buraya bırakın<br>veya seçmek için tıklayın',
+      modeLabel: 'Mod',
+      modeColor: 'Tam renkli',
+      modeMono: 'Tek renk (siyah-beyaz)',
+      paletteLabel: 'Palet boyutu',
+      thresholdLabel: 'Eşik değeri',
+      invertLabel: 'Tersine çevir',
+      inkLabel: 'Mürekkep rengi',
+      sizeLabel: 'Maks. çalışma boyutu (px)',
+      alphaLabel: 'Alfa eşiği',
+      smoothLabel: 'Köşe yumuşatma',
+      printFriendlyLabel: '3D baskıya uygun',
+      printFriendlyHint: 'Renk sayısını sabitler ve her rengi kendi hizalanmış SVG veya STL dosyası olarak indirmenizi sağlar — çok renkli baskı için bunları dilimleyicinize ayrı parçalar olarak aktarın.',
+      stlWidthLabel: 'Baskı genişliği (mm)',
+      stlThicknessLabel: 'Katman kalınlığı (mm)',
+      stlHint: 'Tüm renk katmanları bu genişlik ve kalınlığı paylaşır, böylece STL dosyaları dilimleyicinizde birlikte yüklendiğinde hizalı kalır.',
+      printFriendlyColorsLabel: 'Renk sayısı',
+      layersTitle: 'Baskı katmanları · her rengi ayrı ayrı indirin(Başarı oranı en yüksek)',
+      layerDl: 'İndir',
+      layerDlSvg: 'SVG',
+      layerDlStl: 'STL',
+      downloadAllStl: 'Tümünü STL olarak indir (.zip) (DENEYSEL, başarı oranı düşük)',
+      downloadAll3mf: 'Tümünü 3MF olarak indir (renkli)(DENEYSEL, başarı oranı düşük)',
+      buildingZip: 'zip oluşturuluyor…',
+      building3mf: '3mf oluşturuluyor…',
+      runBtn: 'Vektörleştir',
+      dlBtn: '.svg indir',
+      panelSource: 'Kaynak görüntü',
+      panelOutput: 'Vektör çıktısı',
+      statColors: 'renk',
+      statPaths: 'yol',
+      statNodes: 'düğüm',
+      statSize: 'tuval',
+      footer: 'MIT lisanslı · açık kaynak · renk nicemleme + sınır izleme ile istemci taraflı vektörleştirme',
+      disclaimer: 'Bu araç "olduğu gibi", herhangi bir garanti verilmeksizin sunulmaktadır. Geliştirici, bu yazılımın veya ürettiği dosyaların (3D baskı, kesim veya kazıma için kullanılan SVG ve STL çıktıları dahil) kullanımından kaynaklanan herhangi bir hata, yanlışlık, baskı hatası, malzeme kaybı, ekipman hasarı veya başka bir zarar için hiçbir sorumluluk kabul etmez. Üretimde kullanmadan önce oluşturulan geometriyi her zaman kontrol edin. MIT Lisansı altında lisanslanmıştır; kaynak kod serbestçe kullanılabilir, değiştirilebilir ve yeniden dağıtılabilir.',
+      placeholderNoImage: '— görüntü yüklenmedi —',
+      placeholderAwaiting: '— izleme bekleniyor —',
+      placeholderFailed: 'izleme başarısız — daha küçük bir çalışma boyutu deneyin',
+      statusTracing: 'izleniyor…',
+      toggleShow: 'svg kaynağını göster',
+      toggleHide: 'svg kaynağını gizle',
+      tt_drop: 'Göz atmak için tıklayın veya bir PNG dosyasını bu alana sürükleyip bırakın.',
+      tt_printFriendly: 'Paleti seçilen renk sayısına sabitler ve renk başına SVG ile STL indirmeyi açar; böylece çok renkli/çok malzemeli baskı için her renk ayrı, hizalı bir parça olarak içe aktarılabilir.',
+      tt_stlWidth: 'Dışa aktarılan STL için gerçek dünya genişliği (milimetre). Tüm renk katmanları aynı genişliği kullanır, böylece kalıpları hizalı kalır.',
+      tt_stlThickness: 'Her renk katmanının STL katısı için ekstrüzyon yüksekliği (milimetre). Tüm katmanlar aynı kalınlığı paylaşır, böylece birbirine tam oturur.',
+      tt_printFriendlyColors: '3D baskıya uygun mod açıkken görüntüden çıkarılacak farklı renk sayısı.',
+      tt_mode: 'Tam renkli, palet çıkarma yoluyla birden çok rengi izler; Tek renk, parlaklık eşiği kullanarak tek bir mürekkep rengini izler.',
+      tt_colors: 'Palet çıkarmanın (k-means) görüntüde bulmaya çalışacağı renk sayısı.',
+      tt_thresh: 'Tek renkli izleme için parlaklık eşiği \u2014 bu değerden daha koyu pikseller mürekkep olur.',
+      tt_invert: 'Parlaklık eşiğinin hangi tarafının mürekkep, hangisinin arka plan sayılacağını değiştirir.',
+      tt_ink: 'Tek renkli modda izlenen pikseller için kullanılan dolgu rengi.',
+      tt_size: 'İzleme sırasında kullanılan maksimum görüntü boyutu (piksel). Daha yüksek değerler daha fazla ayrıntı yakalar ancak işlem daha uzun sürer ve daha ağır SVG/STL çıktısı üretir.',
+      tt_alpha: 'Bir pikselin şeffaf arka plan yerine görüntünün parçası sayılması için gereken minimum opaklık.',
+      tt_smooth: 'İzlenen şekillerin dış köşelerini yuvarlar. İki renk arasındaki dikişler asla yuvarlatılmaz, böylece çok renkli parçalar boşluksuz kalır.',
+      tt_run: 'Yüklenen PNG\u2019yi mevcut ayarlarla vektör yollarına dönüştürür.',
+      tt_dl: 'Birleşik çok renkli SVG dosyasını indirir.',
+      tt_layerSvg: 'Bu rengi, diğer renklerle aynı tuvale hizalanmış bağımsız bir SVG olarak indirir.',
+      tt_layerStl: 'Bu rengi, yukarıda ayarlanan baskı genişliği ve katman kalınlığını kullanarak 3D baskıya uygun bir STL katısı olarak indirir.',
+      tt_dlAllStl: 'Her renk katmanını tek bir .zip içinde paketlenmiş STL dosyaları olarak indirir.',
+      tt_dlAll3mf: 'Her renk katmanını, rengi gömülü ve tüm katmanlar birbiriyle tam hizalı şekilde tek bir 3MF dosyasında indirir — dilimleyicinizde katmanları elle hizalamanıza gerek kalmaz.',
+      tt_lang: 'Arayüz dilini İngilizce ve Türkçe arasında değiştirir.'
+    }
+  };
+
+  let currentLang = 'en';
+  function t(key){ return STRINGS[currentLang][key]; }
+
+  function applyLang(lang){
+    if (!STRINGS[lang]) return;
+    currentLang = lang;
+    document.documentElement.lang = lang;
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      if (STRINGS[lang][key] !== undefined) el.textContent = STRINGS[lang][key];
+    });
+    document.querySelectorAll('[data-i18n-title]').forEach(el => {
+      const key = el.getAttribute('data-i18n-title');
+      if (STRINGS[lang][key] !== undefined) el.title = STRINGS[lang][key];
+    });
+    $('drop').innerHTML = t('dropText');
+    $('langToggle').textContent = lang === 'en' ? 'TR' : 'EN';
+    try{ localStorage.setItem('r2v_lang', lang); }catch(e){}
+  }
+
+  // ---------------------------------------------------------------
+  const $ = id => document.getElementById(id);
+  const fileInput = $('file'), drop = $('drop'), run = $('run'), dl = $('dl');
+  const colorsSlider = $('colors'), sizeSlider = $('size'), alphaSlider = $('alpha');
+  const threshSlider = $('thresh'), smoothSlider = $('smooth'), modeSelect = $('mode');
+  const colorField = $('colorField'), monoField = $('monoField'), modeField = $('modeField');
+  const srcStage = $('srcStage'), outStage = $('outStage'), status = $('status');
+  const readout = $('readout'), codeToggle = $('codeToggle'), codeBox = $('codeBox');
+  const printFriendly = $('printFriendly'), printFriendlyColorsField = $('printFriendlyColorsField');
+  const layersPanel = $('layersPanel'), layersGrid = $('layersGrid');
+
+  let sourceImg = null;
+  let lastSVG = null;
+  let lastLayers = [];
+
+  colorsSlider.oninput = () => $('colorsVal').textContent = colorsSlider.value;
+  sizeSlider.oninput = () => $('sizeVal').textContent = sizeSlider.value;
+  alphaSlider.oninput = () => $('alphaVal').textContent = alphaSlider.value;
+  threshSlider.oninput = () => $('threshVal').textContent = threshSlider.value;
+  smoothSlider.oninput = () => $('smoothVal').textContent = parseFloat(smoothSlider.value).toFixed(1);
+  const printFriendlyColorsSlider = $('printFriendlyColors');
+  printFriendlyColorsSlider.oninput = () => $('printFriendlyColorsVal').textContent = printFriendlyColorsSlider.value;
+
+  modeSelect.onchange = () => {
+    const isMono = modeSelect.value === 'mono';
+    colorField.style.display = isMono ? 'none' : 'block';
+    monoField.style.display = isMono ? 'block' : 'none';
+  };
+
+  printFriendly.onchange = () => {
+    const on = printFriendly.checked;
+    printFriendlyColorsField.style.display = on ? 'block' : 'none';
+    $('stlDimsField').style.display = on ? 'block' : 'none';
+    modeField.style.display = on ? 'none' : 'block';
+    if (on){
+      modeSelect.value = 'color';
+      colorField.style.display = 'none';
+      monoField.style.display = 'none';
+    } else {
+      colorField.style.display = 'block';
+      layersPanel.style.display = 'none';
+    }
+  };
+
+  function printFriendlyColorCount(){
+    return parseInt(printFriendlyColorsSlider.value, 10);
+  }
+
+  drop.onclick = () => fileInput.click();
+  drop.ondragover = e => { e.preventDefault(); drop.classList.add('drag'); };
+  drop.ondragleave = () => drop.classList.remove('drag');
+  drop.ondrop = e => {
+    e.preventDefault(); drop.classList.remove('drag');
+    if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+  };
+  fileInput.onchange = () => { if (fileInput.files[0]) handleFile(fileInput.files[0]); };
+
+  function handleFile(file){
+    if (!file.type.startsWith('image/')) return;
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      sourceImg = img;
+      srcStage.innerHTML = '';
+      const preview = document.createElement('img');
+      preview.src = url;
+      srcStage.appendChild(preview);
+      run.disabled = false;
+      outStage.innerHTML = '<div class="placeholder" data-i18n="placeholderAwaiting">' + t('placeholderAwaiting') + '</div>';
+      readout.style.display = 'none';
+      codeToggle.style.display = 'none';
+      codeBox.style.display = 'none';
+      dl.style.display = 'none';
+      layersPanel.style.display = 'none';
+      layersGrid.innerHTML = '';
+    };
+    img.src = url;
+  }
+
+  // ---------------------------------------------------------------
+  (function restore(){
+    try{
+      const savedLang = localStorage.getItem('r2v_lang');
+      applyLang(savedLang === 'tr' ? 'tr' : 'en');
+    }catch(e){ applyLang('en'); }
+  })();
+
+  $('langToggle').onclick = () => applyLang(currentLang === 'en' ? 'tr' : 'en');
+
+  // ---------------------------------------------------------------
+  run.onclick = () => {
+    if (!sourceImg) return;
+    run.disabled = true;
+    status.innerHTML = '<span class="spin"></span><span data-i18n="statusTracing">' + t('statusTracing') + '</span>';
+    setTimeout(() => {
+      try {
+        const pf = printFriendly.checked;
+        const mode = pf ? 'color' : modeSelect.value;
+        const k = pf ? printFriendlyColorCount() : parseInt(colorsSlider.value, 10);
+        const result = vectorize(sourceImg, {
+          mode,
+          k,
+          maxDim: parseInt(sizeSlider.value, 10),
+          alphaCutoff: parseInt(alphaSlider.value, 10),
+          threshold: parseInt(threshSlider.value, 10),
+          invert: $('invert').checked,
+          ink: $('ink').value,
+          smooth: parseFloat(smoothSlider.value)
+        });
+        lastSVG = result.svgString;
+        lastLayers = result.layers;
+        outStage.innerHTML = result.svgString;
+        readout.style.display = 'grid';
+        $('rColors').textContent = result.stats.colors;
+        $('rPaths').textContent = result.stats.paths;
+        $('rNodes').textContent = result.stats.nodes;
+        $('rSize').textContent = result.stats.w + '×' + result.stats.h;
+        codeToggle.style.display = 'block';
+        codeToggle.setAttribute('data-i18n','toggleShow');
+        codeToggle.textContent = t('toggleShow');
+        codeBox.style.display = 'none';
+        codeBox.value = result.svgString;
+        dl.style.display = 'block';
+        status.textContent = '';
+
+        if (pf) renderLayers(result.layers); else layersPanel.style.display = 'none';
+      } catch(err){
+        console.error(err);
+        status.textContent = '';
+        outStage.innerHTML = '<div class="placeholder" data-i18n="placeholderFailed">' + t('placeholderFailed') + '</div>';
+      }
+      run.disabled = false;
+    }, 30);
+  };
+
+  function renderLayers(layers){
+    layersGrid.innerHTML = '';
+    layers.forEach((layer, i) => {
+      const card = document.createElement('div');
+      card.className = 'layer-card';
+
+      const stage = document.createElement('div');
+      stage.className = 'layer-stage';
+      stage.innerHTML = layer.svgString;
+      card.appendChild(stage);
+
+      const meta = document.createElement('div');
+      meta.className = 'layer-meta';
+      const swatch = document.createElement('div');
+      swatch.className = 'layer-swatch';
+      swatch.style.background = layer.hex;
+      const hexLabel = document.createElement('span');
+      hexLabel.className = 'layer-hex';
+      hexLabel.textContent = layer.hex;
+      meta.appendChild(swatch);
+      meta.appendChild(hexLabel);
+      card.appendChild(meta);
+
+      const btnRow = document.createElement('div');
+      btnRow.style.display = 'flex';
+      btnRow.style.gap = '6px';
+
+      const svgBtn = document.createElement('button');
+      svgBtn.className = 'layer-dl-btn';
+      svgBtn.style.flex = '1';
+      svgBtn.textContent = t('layerDlSvg');
+      svgBtn.title = t('tt_layerSvg');
+      svgBtn.onclick = () => {
+        const blob = new Blob([layer.svgString], {type:'image/svg+xml'});
+        downloadBlob(blob, 'vectorized-color' + (i+1) + '-' + layer.hex.replace('#','') + '.svg');
+      };
+      btnRow.appendChild(svgBtn);
+
+      const stlBtn = document.createElement('button');
+      stlBtn.className = 'layer-dl-btn';
+      stlBtn.style.flex = '1';
+      stlBtn.textContent = t('layerDlStl');
+      stlBtn.title = t('tt_layerStl');
+      stlBtn.onclick = () => {
+        const widthMM = parseFloat($('stlWidth').value) || 100;
+        const thicknessMM = parseFloat($('stlThickness').value) || 0.4;
+        const stlText = layerToSTL(layer, widthMM, thicknessMM);
+        const blob = new Blob([stlText], {type:'model/stl'});
+        downloadBlob(blob, 'vectorized-color' + (i+1) + '-' + layer.hex.replace('#','') + '.stl');
+      };
+      btnRow.appendChild(stlBtn);
+
+      card.appendChild(btnRow);
+
+      layersGrid.appendChild(card);
+    });
+    layersPanel.style.display = 'block';
+  }
+
+  function downloadBlob(blob, filename){
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  const dlAllStlBtn = $('dlAllStl');
+  dlAllStlBtn.onclick = () => {
+    if (!lastLayers.length) return;
+    dlAllStlBtn.disabled = true;
+    const restoreLabel = dlAllStlBtn.textContent;
+    dlAllStlBtn.textContent = t('buildingZip');
+    setTimeout(() => {
+      try {
+        const widthMM = parseFloat($('stlWidth').value) || 100;
+        const thicknessMM = parseFloat($('stlThickness').value) || 0.4;
+        const files = lastLayers.map((layer, i) => ({
+          name: 'color' + (i+1) + '-' + layer.hex.replace('#','') + '.stl',
+          data: layerToSTL(layer, widthMM, thicknessMM)
+        }));
+        const zipBlob = makeZip(files);
+        downloadBlob(zipBlob, 'vectorized-layers-stl.zip');
+      } catch(err){
+        console.error(err);
+      }
+      dlAllStlBtn.disabled = false;
+      dlAllStlBtn.textContent = restoreLabel;
+    }, 30);
+  };
+
+  const dlAll3mfBtn = $('dlAll3mf');
+  dlAll3mfBtn.onclick = () => {
+    if (!lastLayers.length) return;
+    dlAll3mfBtn.disabled = true;
+    const restoreLabel = dlAll3mfBtn.textContent;
+    dlAll3mfBtn.textContent = t('building3mf');
+    setTimeout(() => {
+      try {
+        const widthMM = parseFloat($('stlWidth').value) || 100;
+        const thicknessMM = parseFloat($('stlThickness').value) || 0.4;
+        const mfBlob = layersTo3MF(lastLayers, widthMM, thicknessMM);
+        downloadBlob(mfBlob, 'vectorized-layers.3mf');
+      } catch(err){
+        console.error(err);
+      }
+      dlAll3mfBtn.disabled = false;
+      dlAll3mfBtn.textContent = restoreLabel;
+    }, 30);
+  };
+
+
+  codeToggle.onclick = () => {
+    const showing = codeBox.style.display === 'block';
+    codeBox.style.display = showing ? 'none' : 'block';
+    codeToggle.setAttribute('data-i18n', showing ? 'toggleShow' : 'toggleHide');
+    codeToggle.textContent = showing ? t('toggleShow') : t('toggleHide');
+  };
+
+  dl.onclick = () => {
+    if (!lastSVG) return;
+    const blob = new Blob([lastSVG], {type:'image/svg+xml'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'vectorized.svg';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // ---------------------------------------------------------------
+  // CORE: PNG -> SVG vectorization
+  // ---------------------------------------------------------------
+
+  function hexToRgb(hex){
+    const h = hex.replace('#','');
+    return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)];
+  }
+
+  function vectorize(img, opts){
+    const { mode, k, maxDim, alphaCutoff, threshold, invert, ink, smooth } = opts;
+
+    // 1. draw to canvas, downscaled to maxDim on the long edge
+    const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+    const w = Math.max(1, Math.round(img.width * scale));
+    const h = Math.max(1, Math.round(img.height * scale));
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, w, h);
+    const data = ctx.getImageData(0, 0, w, h).data;
+
+    const n = w * h;
+    const isOpaque = new Uint8Array(n);
+    for (let i = 0; i < n; i++){
+      if (data[i*4+3] >= alphaCutoff) isOpaque[i] = 1;
+    }
+
+    let palette = [];
+    let labels = new Int32Array(n).fill(-1);
+
+    if (mode === 'mono'){
+      palette = [hexToRgb(ink)];
+      for (let i = 0; i < n; i++){
+        if (!isOpaque[i]) continue;
+        const r = data[i*4], g = data[i*4+1], b = data[i*4+2];
+        const lum = 0.299*r + 0.587*g + 0.114*b;
+        let isFg = lum < threshold;
+        if (invert) isFg = !isFg;
+        labels[i] = isFg ? 0 : -1;
+      }
+    } else {
+      const samples = [];
+      for (let i = 0; i < n; i++){
+        if (isOpaque[i]) samples.push([data[i*4], data[i*4+1], data[i*4+2]]);
+      }
+      if (samples.length > 0){
+        palette = kMeansPalette(samples, Math.min(k, samples.length));
+        for (let i = 0; i < n; i++){
+          if (!isOpaque[i]) continue;
+          const r = data[i*4], g = data[i*4+1], b = data[i*4+2];
+          labels[i] = nearestColor(palette, r, g, b);
+        }
+      }
+    }
+
+    // 3. trace each color's mask into closed rectilinear loops
+    const pathsByColor = [];
+    let totalNodes = 0;
+    let totalPaths = 0;
+
+    for (let c = 0; c < palette.length; c++){
+      let any = false;
+      for (let i = 0; i < n; i++){ if (labels[i] === c){ any = true; break; } }
+      if (!any) continue;
+
+      // trace with the full label map (not just a yes/no mask) so each
+      // boundary edge can be classified as facing the background ('outer')
+      // or facing another opaque color ('inner'). Only 'outer' corners get
+      // rounded later — seams between two colors must stay exact, or a
+      // gap opens between them (fatal for multi-color/multi-material prints).
+      const loops = traceMaskLoops(labels, w, h, c);
+      if (loops.length === 0) continue;
+      const simplified = loops
+        .map(l => simplifyLoop(l.pts, l.edgeTypes))
+        .filter(l => l.pts.length >= 4);
+      if (simplified.length === 0) continue;
+
+      const d = simplified.map(l => buildLoopPath(l.pts, l.edgeTypes, smooth)).join(' ');
+      simplified.forEach(l => totalNodes += l.pts.length);
+      totalPaths++;
+      pathsByColor.push({ color: palette[c], d, loops: simplified });
+    }
+
+    // 4. compose the merged SVG (all colors together, for the preview)
+    const svgParts = [];
+    const crisp = smooth > 0 ? '' : ' shape-rendering="crispEdges"';
+    const openTag = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}"${crisp}>`;
+    svgParts.push(openTag);
+    for (const p of pathsByColor){
+      const [r,g,b] = p.color;
+      const hex = rgbToHex(r,g,b);
+      svgParts.push(`<path fill-rule="evenodd" fill="${hex}" d="${p.d}"/>`);
+    }
+    svgParts.push('</svg>');
+    const svgString = svgParts.join('');
+
+    // 5. also compose one standalone SVG per color, sharing the exact same
+    // viewBox/width/height as the merged one — so if you drop all of them
+    // into the same slicer project at the same scale, they land in
+    // register and reassemble into the original image.
+    const layers = pathsByColor.map(p => {
+      const [r,g,b] = p.color;
+      const hex = rgbToHex(r,g,b);
+      const layerSvg = openTag + `<path fill-rule="evenodd" fill="${hex}" d="${p.d}"/>` + '</svg>';
+      return { hex, svgString: layerSvg, loops: p.loops, smooth, w, h };
+    });
+
+    return {
+      svgString,
+      layers,
+      stats: { colors: pathsByColor.length, paths: totalPaths, nodes: totalNodes, w, h }
+    };
+  }
+
+  function rgbToHex(r,g,b){
+    return '#' + [r,g,b].map(v => v.toString(16).padStart(2,'0')).join('');
+  }
+
+  // --- k-means++ style palette extraction ---
+  function kMeansPalette(samples, k){
+    const maxSamples = 4000;
+    let pool = samples;
+    if (pool.length > maxSamples){
+      pool = [];
+      const step = samples.length / maxSamples;
+      for (let i = 0; i < maxSamples; i++) pool.push(samples[Math.floor(i*step)]);
+    }
+
+    const centroids = [];
+    centroids.push(pool[Math.floor(Math.random()*pool.length)]);
+    while (centroids.length < k){
+      const dists = pool.map(p => {
+        let min = Infinity;
+        for (const c of centroids){
+          const dd = sqDist(p, c);
+          if (dd < min) min = dd;
+        }
+        return min;
+      });
+      const sum = dists.reduce((a,b)=>a+b, 0);
+      if (sum === 0){ centroids.push(pool[Math.floor(Math.random()*pool.length)]); continue; }
+      let r = Math.random() * sum;
+      let idx = 0;
+      for (; idx < dists.length; idx++){
+        r -= dists[idx];
+        if (r <= 0) break;
+      }
+      centroids.push(pool[Math.min(idx, pool.length-1)]);
+    }
+
+    let assign = new Array(pool.length).fill(0);
+    for (let iter = 0; iter < 8; iter++){
+      for (let i = 0; i < pool.length; i++){
+        assign[i] = nearestColor(centroids, pool[i][0], pool[i][1], pool[i][2]);
+      }
+      const sums = centroids.map(() => [0,0,0,0]);
+      for (let i = 0; i < pool.length; i++){
+        const a = assign[i], p = pool[i];
+        sums[a][0]+=p[0]; sums[a][1]+=p[1]; sums[a][2]+=p[2]; sums[a][3]++;
+      }
+      for (let c = 0; c < centroids.length; c++){
+        if (sums[c][3] > 0){
+          centroids[c] = [
+            Math.round(sums[c][0]/sums[c][3]),
+            Math.round(sums[c][1]/sums[c][3]),
+            Math.round(sums[c][2]/sums[c][3])
+          ];
+        }
+      }
+    }
+    return centroids;
+  }
+
+  function sqDist(a,b){
+    const dr=a[0]-b[0], dg=a[1]-b[1], db=a[2]-b[2];
+    return dr*dr+dg*dg+db*db;
+  }
+
+  function nearestColor(palette, r, g, b){
+    let best = 0, bestD = Infinity;
+    for (let i = 0; i < palette.length; i++){
+      const c = palette[i];
+      const dr=r-c[0], dg=g-c[1], db=b-c[2];
+      const d = dr*dr+dg*dg+db*db;
+      if (d < bestD){ bestD = d; best = i; }
+    }
+    return best;
+  }
+
+  // --- boundary tracing: labels -> array of closed rectilinear loops,
+  // each edge tagged 'outer' (faces background/image edge) or 'inner'
+  // (faces a different opaque color — a seam that must stay exact) ---
+  function traceMaskLoops(labels, w, h, colorIndex){
+    const edges = [];
+    const adj = new Map();
+    const key = (x,y) => x + ',' + y;
+
+    function isColor(px,py){
+      if (px<0 || py<0 || px>=w || py>=h) return false;
+      return labels[py*w+px] === colorIndex;
+    }
+    function neighborType(px,py){
+      if (px<0 || py<0 || px>=w || py>=h) return 'outer';
+      return labels[py*w+px] === -1 ? 'outer' : 'inner';
+    }
+    function addEdge(x1,y1,x2,y2,type){
+      const idx = edges.length;
+      edges.push({p1:[x1,y1], p2:[x2,y2], type});
+      pushAdj(x1,y1,idx); pushAdj(x2,y2,idx);
+    }
+    function pushAdj(x,y,idx){
+      const kk = key(x,y);
+      if (!adj.has(kk)) adj.set(kk, []);
+      adj.get(kk).push(idx);
+    }
+
+    for (let y = 0; y < h; y++){
+      for (let x = 0; x < w; x++){
+        if (!isColor(x,y)) continue;
+        if (!isColor(x,y-1)) addEdge(x,y,x+1,y, neighborType(x,y-1));
+        if (!isColor(x,y+1)) addEdge(x,y+1,x+1,y+1, neighborType(x,y+1));
+        if (!isColor(x-1,y)) addEdge(x,y,x,y+1, neighborType(x-1,y));
+        if (!isColor(x+1,y)) addEdge(x+1,y,x+1,y+1, neighborType(x+1,y));
+      }
+    }
+
+    const used = new Uint8Array(edges.length);
+    const loops = [];
+
+    function otherEndpoint(idx, pt){
+      const e = edges[idx];
+      return (e.p1[0]===pt[0] && e.p1[1]===pt[1]) ? e.p2 : e.p1;
+    }
+
+    for (let i = 0; i < edges.length; i++){
+      if (used[i]) continue;
+      used[i] = 1;
+      const start = edges[i].p1;
+      let cur = edges[i].p2;
+      const pts = [start];
+      const edgeTypes = [edges[i].type];
+      let guard = 0;
+      while (!(cur[0]===start[0] && cur[1]===start[1]) && guard < edges.length+5){
+        guard++;
+        pts.push(cur);
+        const candidates = adj.get(key(cur[0],cur[1])) || [];
+        let found = -1;
+        for (const eIdx of candidates){ if (!used[eIdx]){ found = eIdx; break; } }
+        if (found === -1) break;
+        used[found] = 1;
+        edgeTypes.push(edges[found].type);
+        cur = otherEndpoint(found, cur);
+      }
+      if (pts.length >= 4) loops.push({ pts, edgeTypes });
+    }
+    return loops;
+  }
+
+  // collapse collinear runs of points, but only when both merged edges
+  // share the same outer/inner type — a type change always keeps its
+  // vertex, since that's exactly where rounding must stop
+  function simplifyLoop(pts, edgeTypes){
+    let n = pts.length;
+    let changed = true;
+    while (changed && n >= 4){
+      changed = false;
+      const outPts = [], outTypes = [];
+      for (let i = 0; i < n; i++){
+        const prevIdx = (i-1+n)%n;
+        const edgeIn = edgeTypes[prevIdx];
+        const edgeOut = edgeTypes[i];
+        const prev = pts[prevIdx], cur = pts[i], next = pts[(i+1)%n];
+        const d1x = cur[0]-prev[0], d1y = cur[1]-prev[1];
+        const d2x = next[0]-cur[0], d2y = next[1]-cur[1];
+        const collinear = (d1x*d2y - d1y*d2x === 0);
+        if (collinear && edgeIn === edgeOut){ changed = true; continue; }
+        outPts.push(cur); outTypes.push(edgeOut);
+      }
+      if (outPts.length >= 4){ pts = outPts; edgeTypes = outTypes; n = outPts.length; }
+      else break;
+    }
+    return { pts, edgeTypes };
+  }
+
+  // builds one closed path. A vertex is only rounded if BOTH its incident
+  // edges are 'outer' (background-facing). Any vertex touching an 'inner'
+  // (seam) edge is left exactly where it is, so two adjacent colors keep
+  // meeting with zero gap no matter how much smoothing is applied.
+  function buildLoopPath(pts, edgeTypes, amount){
+    const n = pts.length;
+    if (n < 3) return '';
+    function sub(a,b){ return [a[0]-b[0], a[1]-b[1]]; }
+    function add(a,b){ return [a[0]+b[0], a[1]+b[1]]; }
+    function scale(a,s){ return [a[0]*s, a[1]*s]; }
+    function len(a){ return Math.hypot(a[0], a[1]) || 1; }
+
+    let d = '';
+    let started = false;
+    for (let i = 0; i < n; i++){
+      const prevIdx = (i-1+n)%n;
+      const edgeIn = edgeTypes[prevIdx], edgeOut = edgeTypes[i];
+      const roundable = amount > 0 && edgeIn === 'outer' && edgeOut === 'outer';
+      const prev = pts[prevIdx], cur = pts[i], next = pts[(i+1)%n];
+
+      if (roundable){
+        const toPrev = sub(prev, cur), toNext = sub(next, cur);
+        const lenPrev = len(toPrev), lenNext = len(toNext);
+        const r1 = Math.min(amount, lenPrev*0.5);
+        const r2 = Math.min(amount, lenNext*0.5);
+        const A = add(cur, scale(toPrev, r1/lenPrev));
+        const B = add(cur, scale(toNext, r2/lenNext));
+        d += (!started ? 'M' : 'L') + A[0].toFixed(2) + ',' + A[1].toFixed(2);
+        started = true;
+        d += 'Q' + cur[0] + ',' + cur[1] + ' ' + B[0].toFixed(2) + ',' + B[1].toFixed(2);
+      } else {
+        d += (!started ? 'M' : 'L') + cur[0] + ',' + cur[1];
+        started = true;
+      }
+    }
+    d += 'Z';
+    return d;
+  }
+
+  // ---------------------------------------------------------------
+  // STL export: turns a color layer's traced loops into a real, closed
+  // (watertight) 3D solid — same seam-safe geometry as the SVG, extruded
+  // to a chosen thickness. Triangulation of holes/multiple loops is done
+  // with earcut rather than hand-rolled code, since that's exactly the
+  // case generic "SVG to STL" tools tend to get wrong.
+  // ---------------------------------------------------------------
+
+  // tessellate one loop (respecting the same seam-safe rounding as the SVG
+  // path) into a flat point ring, so curves become straight segments a
+  // triangulator can consume.
+  function tessellateLoop(pts, edgeTypes, smoothAmount, segments){
+    const n = pts.length;
+    if (n < 3) return pts.slice();
+    function sub(a,b){ return [a[0]-b[0], a[1]-b[1]]; }
+    function add(a,b){ return [a[0]+b[0], a[1]+b[1]]; }
+    function scale(a,s){ return [a[0]*s, a[1]*s]; }
+    function len(a){ return Math.hypot(a[0], a[1]) || 1; }
+    const out = [];
+    for (let i = 0; i < n; i++){
+      const prevIdx = (i-1+n)%n;
+      const edgeIn = edgeTypes[prevIdx], edgeOut = edgeTypes[i];
+      const roundable = smoothAmount > 0 && edgeIn === 'outer' && edgeOut === 'outer';
+      const prev = pts[prevIdx], cur = pts[i], next = pts[(i+1)%n];
+      if (roundable){
+        const toPrev = sub(prev, cur), toNext = sub(next, cur);
+        const lenPrev = len(toPrev), lenNext = len(toNext);
+        const r1 = Math.min(smoothAmount, lenPrev*0.5), r2 = Math.min(smoothAmount, lenNext*0.5);
+        const A = add(cur, scale(toPrev, r1/lenPrev));
+        const B = add(cur, scale(toNext, r2/lenNext));
+        out.push(A);
+        for (let s = 1; s < segments; s++){
+          const t = s/segments;
+          const x = (1-t)*(1-t)*A[0] + 2*t*(1-t)*cur[0] + t*t*B[0];
+          const y = (1-t)*(1-t)*A[1] + 2*t*(1-t)*cur[1] + t*t*B[1];
+          out.push([x,y]);
+        }
+        out.push(B);
+      } else {
+        out.push(cur);
+      }
+    }
+    const dedup = [out[0]];
+    for (let i = 1; i < out.length; i++){
+      const a = dedup[dedup.length-1], b = out[i];
+      if (Math.abs(a[0]-b[0]) > 1e-9 || Math.abs(a[1]-b[1]) > 1e-9) dedup.push(b);
+    }
+    return dedup;
+  }
+
+  function signedArea(loop){
+    let s = 0;
+    const n = loop.length;
+    for (let i = 0; i < n; i++){
+      const [x1,y1] = loop[i], [x2,y2] = loop[(i+1)%n];
+      s += x1*y2 - x2*y1;
+    }
+    return s/2;
+  }
+
+  function pointInPolygon(pt, poly){
+    let inside = false;
+    const [px,py] = pt;
+    for (let i = 0, j = poly.length-1; i < poly.length; j = i++){
+      const [xi,yi] = poly[i], [xj,yj] = poly[j];
+      const intersect = ((yi>py)!==(yj>py)) && (px < (xj-xi)*(py-yi)/(yj-yi)+xi);
+      if (intersect) inside = !inside;
+    }
+    return inside;
+  }
+
+  // a point guaranteed to be strictly inside a simple polygon: take the
+  // extremal (leftmost) vertex — its interior angle can't be reflex, since
+  // nothing exists further left — and nudge just inside from there.
+  function interiorPointOf(loop){
+    let minIdx = 0;
+    for (let i = 1; i < loop.length; i++){
+      if (loop[i][0] < loop[minIdx][0] || (loop[i][0]===loop[minIdx][0] && loop[i][1]<loop[minIdx][1])) minIdx = i;
+    }
+    const n = loop.length;
+    const V = loop[minIdx], P = loop[(minIdx-1+n)%n], N = loop[(minIdx+1)%n];
+    const M = [(P[0]+N[0])/2, (P[1]+N[1])/2];
+    const eps = 0.05;
+    return [V[0] + eps*(M[0]-V[0]), V[1] + eps*(M[1]-V[1])];
+  }
+
+  // groups a color's loops into islands of {outer, holes}, using point
+  // containment (not winding order, which our tracer doesn't guarantee) to
+  // tell outer boundaries from holes — then normalizes winding so every
+  // ring keeps "solid" consistently on the same side, which side-wall
+  // generation depends on.
+  function classifyAndGroupLoops(loops){
+    const n = loops.length;
+    const testPoints = loops.map(interiorPointOf);
+    const containers = [];
+    const depth = new Array(n).fill(0);
+    for (let i = 0; i < n; i++){
+      const c = [];
+      for (let j = 0; j < n; j++){
+        if (i===j) continue;
+        if (pointInPolygon(testPoints[i], loops[j])) c.push(j);
+      }
+      containers.push(c);
+      depth[i] = c.length;
+    }
+    const parent = new Array(n).fill(-1);
+    for (let i = 0; i < n; i++){
+      let best = -1, bestDepth = -1;
+      for (const j of containers[i]) if (depth[j] > bestDepth){ bestDepth = depth[j]; best = j; }
+      parent[i] = best;
+    }
+    for (let i = 0; i < n; i++){
+      const a = signedArea(loops[i]);
+      const wantPositive = depth[i]%2 === 0;
+      if ((wantPositive && a<0) || (!wantPositive && a>0)) loops[i].reverse();
+    }
+    const islands = [];
+    for (let i = 0; i < n; i++){
+      if (depth[i]%2 === 0){
+        const holes = [];
+        for (let j = 0; j < n; j++) if (parent[j]===i) holes.push(j);
+        islands.push({ outer: i, holes });
+      }
+    }
+    return islands;
+  }
+
+  // orients a cap triangle so its flat normal's Z component has the
+  // requested sign (true = pointing +Z, false = pointing -Z)
+  function ensureCapWinding(tri, coordsFlat, desiredPositiveZ){
+    const [ia,ib,ic] = tri;
+    const ax=coordsFlat[ia*2], ay=coordsFlat[ia*2+1];
+    const bx=coordsFlat[ib*2], by=coordsFlat[ib*2+1];
+    const cx=coordsFlat[ic*2], cy=coordsFlat[ic*2+1];
+    const cross = (bx-ax)*(cy-ay) - (cx-ax)*(by-ay);
+    if ((cross > 0) === desiredPositiveZ) return tri;
+    return [ia, ic, ib];
+  }
+
+  // builds a closed, watertight triangle mesh (in real-world units) for one
+  // color's loops: triangulated top/bottom caps (via earcut, with holes)
+  // plus vertical side walls along every ring.
+  function buildSolidMesh(rawLoops, smoothAmount, segments, scaleX, scaleY, heightMM){
+    const loops = rawLoops.map(l => tessellateLoop(l.pts, l.edgeTypes, smoothAmount, segments));
+    const islands = classifyAndGroupLoops(loops);
+    const triangles = [];
+
+    for (const island of islands){
+      const outer = loops[island.outer];
+      const holes = island.holes.map(idx => loops[idx]);
+
+      const coords = [];
+      outer.forEach(p => coords.push(p[0], p[1]));
+      const holeIndices = [];
+      holes.forEach(h => { holeIndices.push(coords.length/2); h.forEach(p => coords.push(p[0], p[1])); });
+
+      const tris = earcut.default(coords, holeIndices.length ? holeIndices : undefined);
+      for (let t = 0; t < tris.length; t += 3){
+        const triIdx = [tris[t], tris[t+1], tris[t+2]];
+        const topTri = ensureCapWinding(triIdx, coords, true);
+        triangles.push(topTri.map(i => [coords[i*2]*scaleX, coords[i*2+1]*scaleY, heightMM]));
+        const botTri = ensureCapWinding(triIdx, coords, false);
+        triangles.push(botTri.map(i => [coords[i*2]*scaleX, coords[i*2+1]*scaleY, 0]));
+      }
+
+      const allRings = [outer, ...holes];
+      for (const ring of allRings){
+        const rn = ring.length;
+        for (let i = 0; i < rn; i++){
+          const p1 = ring[i], p2 = ring[(i+1)%rn];
+          const b1 = [p1[0]*scaleX, p1[1]*scaleY, 0];
+          const b2 = [p2[0]*scaleX, p2[1]*scaleY, 0];
+          const t1 = [p1[0]*scaleX, p1[1]*scaleY, heightMM];
+          const t2 = [p2[0]*scaleX, p2[1]*scaleY, heightMM];
+          triangles.push([b1, b2, t2]);
+          triangles.push([b1, t2, t1]);
+        }
+      }
+    }
+    return triangles;
+  }
+
+  function triNormal(tri){
+    const [a,b,c] = tri;
+    const ux=b[0]-a[0], uy=b[1]-a[1], uz=b[2]-a[2];
+    const vx=c[0]-a[0], vy=c[1]-a[1], vz=c[2]-a[2];
+    const nx=uy*vz-uz*vy, ny=uz*vx-ux*vz, nz=ux*vy-uy*vx;
+    const len = Math.hypot(nx,ny,nz) || 1;
+    return [nx/len, ny/len, nz/len];
+  }
+
+  function trianglesToSTL(triangles, name){
+    const lines = [`solid ${name}`];
+    for (const tri of triangles){
+      const [nx,ny,nz] = triNormal(tri);
+      lines.push(`facet normal ${nx.toFixed(6)} ${ny.toFixed(6)} ${nz.toFixed(6)}`);
+      lines.push('  outer loop');
+      for (const v of tri) lines.push(`    vertex ${v[0].toFixed(6)} ${v[1].toFixed(6)} ${v[2].toFixed(6)}`);
+      lines.push('  endloop');
+      lines.push('endfacet');
+    }
+    lines.push(`endsolid ${name}`);
+    return lines.join('\n');
+  }
+
+  // builds a ready-to-download STL for one layer: real-world width in mm
+  // is user-chosen; height follows proportionally so aspect ratio matches
+  // the original image exactly, keeping every layer in registration.
+  function layerToSTL(layer, printWidthMM, thicknessMM){
+    const scale = printWidthMM / layer.w;
+    const triangles = buildSolidMesh(layer.loops, layer.smooth, 8, scale, scale, thicknessMM);
+    return trianglesToSTL(triangles, 'vectorized_' + layer.hex.replace('#',''));
+  }
+
+  // ---------------------------------------------------------------
+  // 3MF export: bundles every color layer into a single 3MF package as
+  // separate mesh objects, each carrying its own color via the core
+  // Materials & Properties extension (m:colorgroup / pid+pindex) so
+  // slicers that support 3MF materials show every layer pre-colored.
+  //
+  // Critically, every layer's loops live in the same pixel-space
+  // coordinate system (same w/h from vectorize()) and every layer is
+  // scaled by the same printWidthMM/thicknessMM, so placing all the
+  // resulting objects at an identity transform in one file keeps them
+  // in exact registration automatically -- unlike importing separate
+  // STL files one at a time, where a slicer's auto-center/auto-arrange
+  // behavior breaks alignment and causes z-fighting/gaps between colors.
+  // ---------------------------------------------------------------
+  function triangles3MFMeshXML(triangles){
+    const vBuf = [];
+    const tBuf = [];
+    let idx = 0;
+    for (const tri of triangles){
+      const ids = [];
+      for (const v of tri){
+        vBuf.push('<vertex x="' + v[0].toFixed(6) + '" y="' + v[1].toFixed(6) + '" z="' + v[2].toFixed(6) + '"/>');
+        ids.push(idx++);
+      }
+      tBuf.push('<triangle v1="' + ids[0] + '" v2="' + ids[1] + '" v3="' + ids[2] + '"/>');
+    }
+    return '<mesh><vertices>' + vBuf.join('') + '</vertices><triangles>' + tBuf.join('') + '</triangles></mesh>';
+  }
+
+  // builds a ready-to-download 3MF package (as a Blob) bundling every
+  // color layer as its own colored, aligned object in a single file.
+  function layersTo3MF(layers, printWidthMM, thicknessMM){
+    const colorGroupId = 1;
+    const colorTags = layers.map(l => '<m:color color="' + l.hex.toUpperCase() + 'FF"/>').join('');
+
+    const objectTags = [];
+    const itemTags = [];
+    layers.forEach((layer, i) => {
+      const objId = colorGroupId + 1 + i;
+      const scale = printWidthMM / layer.w;
+      const triangles = buildSolidMesh(layer.loops, layer.smooth, 8, scale, scale, thicknessMM);
+      const meshXML = triangles3MFMeshXML(triangles);
+      objectTags.push(
+        '<object id="' + objId + '" type="model" pid="' + colorGroupId + '" pindex="' + i + '">' +
+        meshXML +
+        '</object>'
+      );
+      itemTags.push('<item objectid="' + objId + '"/>');
+    });
+
+    const modelXML =
+      '<?xml version="1.0" encoding="UTF-8"?>' +
+      '<model unit="millimeter" xml:lang="en-US" ' +
+      'xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02" ' +
+      'xmlns:m="http://schemas.microsoft.com/3dmanufacturing/material/2015/02">' +
+      '<resources>' +
+      '<m:colorgroup id="' + colorGroupId + '">' + colorTags + '</m:colorgroup>' +
+      objectTags.join('') +
+      '</resources>' +
+      '<build>' + itemTags.join('') + '</build>' +
+      '</model>';
+
+    const contentTypesXML =
+      '<?xml version="1.0" encoding="UTF-8"?>' +
+      '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+      '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+      '<Default Extension="model" ContentType="application/vnd.ms-package.3dmanufacturing-3dmodel+xml"/>' +
+      '</Types>';
+
+    const relsXML =
+      '<?xml version="1.0" encoding="UTF-8"?>' +
+      '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+      '<Relationship Target="/3D/3dmodel.model" Id="rel0" Type="http://schemas.microsoft.com/3dmanufacturing/2013/01/3dmodel"/>' +
+      '</Relationships>';
+
+    const files = [
+      { name: '[Content_Types].xml', data: contentTypesXML },
+      { name: '_rels/.rels', data: relsXML },
+      { name: '3D/3dmodel.model', data: modelXML }
+    ];
+    return makeZip(files);
+  }
+
+  // ---------------------------------------------------------------
+  // Tiny offline ZIP writer (STORE method — no compression needed for
+  // text STLs) so "download all as STL" doesn't pull in a third-party
+  // library and stays fully client-side.
+  // ---------------------------------------------------------------
+  const crcTable = (() => {
+    const table = new Uint32Array(256);
+    for (let n = 0; n < 256; n++){
+      let c = n;
+      for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+      table[n] = c >>> 0;
+    }
+    return table;
+  })();
+  function crc32(bytes){
+    let crc = 0xFFFFFFFF;
+    for (let i = 0; i < bytes.length; i++) crc = crcTable[(crc ^ bytes[i]) & 0xFF] ^ (crc >>> 8);
+    return (crc ^ 0xFFFFFFFF) >>> 0;
+  }
+
+  function makeZip(files){
+    const encoder = new TextEncoder();
+    const localParts = [];
+    const centralParts = [];
+    const records = [];
+    let offset = 0;
+
+    for (const f of files){
+      const nameBytes = encoder.encode(f.name);
+      const dataBytes = encoder.encode(f.data);
+      const crc = crc32(dataBytes);
+      const size = dataBytes.length;
+
+      const localHeader = new Uint8Array(30 + nameBytes.length);
+      const lv = new DataView(localHeader.buffer);
+      lv.setUint32(0, 0x04034b50, true);
+      lv.setUint16(4, 20, true);
+      lv.setUint16(6, 0, true);
+      lv.setUint16(8, 0, true);
+      lv.setUint16(10, 0, true);
+      lv.setUint16(12, 0, true);
+      lv.setUint32(14, crc, true);
+      lv.setUint32(18, size, true);
+      lv.setUint32(22, size, true);
+      lv.setUint16(26, nameBytes.length, true);
+      lv.setUint16(28, 0, true);
+      localHeader.set(nameBytes, 30);
+
+      localParts.push(localHeader, dataBytes);
+      records.push({ nameBytes, crc, size, offset });
+      offset += localHeader.length + dataBytes.length;
+    }
+
+    let centralSize = 0;
+    for (const r of records){
+      const centralHeader = new Uint8Array(46 + r.nameBytes.length);
+      const cv = new DataView(centralHeader.buffer);
+      cv.setUint32(0, 0x02014b50, true);
+      cv.setUint16(4, 20, true);
+      cv.setUint16(6, 20, true);
+      cv.setUint16(8, 0, true);
+      cv.setUint16(10, 0, true);
+      cv.setUint16(12, 0, true);
+      cv.setUint16(14, 0, true);
+      cv.setUint32(16, r.crc, true);
+      cv.setUint32(20, r.size, true);
+      cv.setUint32(24, r.size, true);
+      cv.setUint16(28, r.nameBytes.length, true);
+      cv.setUint16(30, 0, true);
+      cv.setUint16(32, 0, true);
+      cv.setUint16(34, 0, true);
+      cv.setUint16(36, 0, true);
+      cv.setUint32(38, 0, true);
+      cv.setUint32(42, r.offset, true);
+      centralHeader.set(r.nameBytes, 46);
+      centralParts.push(centralHeader);
+      centralSize += centralHeader.length;
+    }
+
+    const eocd = new Uint8Array(22);
+    const ev = new DataView(eocd.buffer);
+    ev.setUint32(0, 0x06054b50, true);
+    ev.setUint16(4, 0, true);
+    ev.setUint16(6, 0, true);
+    ev.setUint16(8, records.length, true);
+    ev.setUint16(10, records.length, true);
+    ev.setUint32(12, centralSize, true);
+    ev.setUint32(16, offset, true);
+    ev.setUint16(20, 0, true);
+
+    return new Blob([...localParts, ...centralParts, eocd], {type:'application/zip'});
+  }
+
+})();
+</script>
+</body>
+</html>
