@@ -96,6 +96,10 @@ multi-color/multi-material printing:
    branch `main`, folder `/ (root)`.
 4. Save. GitHub will publish it at `https://<your-username>.github.io/<repo-name>/`.
 
+## Attributions
+
+This project includes earcut v3.2.3, © Mapbox, ISC License.
+
 ## License
 
 MIT — see [LICENSE](./LICENSE).
