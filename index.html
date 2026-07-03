@@ -584,7 +584,7 @@
       layerDlSvg: 'SVG',
       layerDlStl: 'STL',
       downloadAllStl: 'Download all as STL (.zip)(EXPERIMENTAL, Success rate may vary)',
-      downloadAll3mf: 'Download all as 3MF (colored)(EXPERIMENTAL, Success rate may vary)',
+      downloadAll3mf: 'Download all as 3MF (colored)(EXPERIMENTAL, Success rate better than .zip. Color retention doesnt work at the moment)',
       buildingZip: 'building zip…',
       building3mf: 'building 3mf…',
       runBtn: 'Vectorize',
@@ -650,7 +650,7 @@
       layerDlSvg: 'SVG',
       layerDlStl: 'STL',
       downloadAllStl: 'Tümünü STL olarak indir (.zip) (DENEYSEL, başarı oranı düşük)',
-      downloadAll3mf: 'Tümünü 3MF olarak indir (renkli)(DENEYSEL, başarı oranı düşük)',
+      downloadAll3mf: 'Tümünü 3MF olarak indir (renkli)(DENEYSEL, başarı oranı orta, renkleri şu an için aktaramıyor)',
       buildingZip: 'zip oluşturuluyor…',
       building3mf: '3mf oluşturuluyor…',
       runBtn: 'Vektörleştir',
@@ -1544,37 +1544,79 @@
     return '<mesh><vertices>' + vBuf.join('') + '</vertices><triangles>' + tBuf.join('') + '</triangles></mesh>';
   }
 
+  // RFC4122 v4 UUID, used by the 3MF Production Extension below. Falls
+  // back to a Math.random()-based generator if crypto.randomUUID isn't
+  // available (older WebViews).
+  function makeUUID(){
+    if (window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID();
+    let d = Date.now();
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+      const r = (d + Math.random()*16) % 16 | 0;
+      d = Math.floor(d/16);
+      return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+    });
+  }
+
   // builds a ready-to-download 3MF package (as a Blob) bundling every
-  // color layer as its own colored, aligned object in a single file.
+  // color layer as one colored *part* of a single multi-color object.
+  //
+  // Each color becomes its own <object> (with pid/pindex pointing at its
+  // colorgroup entry), but none of those part-objects go into <build>
+  // directly. Instead they're nested under one parent object via
+  // <components>, and only the parent is placed with a single <item>.
+  // That's the shape a slicer needs to see to treat this as ONE
+  // multi-color object made of parts -- rather than several unrelated
+  // objects that happen to share a plate, which is what a flat list of
+  // top-level objects/items describes instead, and which is also why
+  // color wasn't sticking: color inheritance through the component tree
+  // only kicks in once the parts are actually wired together as
+  // components of a parent, not siblings in the build list.
+  //
+  // Every object/component/item still carries a Production Extension
+  // p:UUID and every placement (component + item) has an explicit
+  // identity transform, for the same "don't rely on defaults" reasons
+  // as before.
   function layersTo3MF(layers, printWidthMM, thicknessMM){
     const colorGroupId = 1;
     const colorTags = layers.map(l => '<m:color color="' + l.hex.toUpperCase() + 'FF"/>').join('');
 
-    const objectTags = [];
-    const itemTags = [];
+    const partObjectTags = [];
+    const componentTags = [];
     layers.forEach((layer, i) => {
       const objId = colorGroupId + 1 + i;
       const scale = printWidthMM / layer.w;
       const triangles = buildSolidMesh(layer.loops, layer.smooth, 8, scale, scale, thicknessMM);
       const meshXML = triangles3MFMeshXML(triangles);
-      objectTags.push(
-        '<object id="' + objId + '" type="model" pid="' + colorGroupId + '" pindex="' + i + '">' +
+      partObjectTags.push(
+        '<object id="' + objId + '" type="model" pid="' + colorGroupId + '" pindex="' + i + '" p:UUID="' + makeUUID() + '">' +
         meshXML +
         '</object>'
       );
-      itemTags.push('<item objectid="' + objId + '"/>');
+      // identity transform on the component reference (row-major 4x3)
+      componentTags.push('<component objectid="' + objId + '" transform="1 0 0 0 1 0 0 0 1 0 0 0"/>');
     });
+
+    const parentObjId = colorGroupId + 1 + layers.length;
+    const parentObjectTag =
+      '<object id="' + parentObjId + '" type="model" p:UUID="' + makeUUID() + '">' +
+      '<components>' + componentTags.join('') + '</components>' +
+      '</object>';
 
     const modelXML =
       '<?xml version="1.0" encoding="UTF-8"?>' +
       '<model unit="millimeter" xml:lang="en-US" ' +
       'xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02" ' +
-      'xmlns:m="http://schemas.microsoft.com/3dmanufacturing/material/2015/02">' +
+      'xmlns:m="http://schemas.microsoft.com/3dmanufacturing/material/2015/02" ' +
+      'xmlns:p="http://schemas.microsoft.com/3dmanufacturing/production/2015/06" ' +
+      'requiredextensions="p">' +
       '<resources>' +
       '<m:colorgroup id="' + colorGroupId + '">' + colorTags + '</m:colorgroup>' +
-      objectTags.join('') +
+      partObjectTags.join('') +
+      parentObjectTag +
       '</resources>' +
-      '<build>' + itemTags.join('') + '</build>' +
+      '<build p:UUID="' + makeUUID() + '">' +
+      '<item objectid="' + parentObjId + '" p:UUID="' + makeUUID() + '" transform="1 0 0 0 1 0 0 0 1 0 0 0"/>' +
+      '</build>' +
       '</model>';
 
     const contentTypesXML =
