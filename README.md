@@ -2,7 +2,7 @@ For those that don't want to download the tool, you can also access it here:
 https://goblinhanyikan.github.io/PNGtoSVG-Multicolor-Printing/
 
 # PNGtoSVG-Multicolor-Printing
-Experimental tool that converts png files to svg, then creates seperate stl files for each colors, allowing the user to print PNG files with multicolor capabilities.
+Experimental tool that converts png files to svg, then creates seperate stl files for each colors, allowing the user to print PNG files with multicolor capabilities. The app is open source and under the MIT license.
 
 DISCLAIMER: This app is made with the assistance of AI. If you are avoiding AI for ethical reasons, I totally understand.
 
